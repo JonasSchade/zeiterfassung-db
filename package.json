@@ -1,0 +1,28 @@
+{
+  "name": "zeiterfassung-db",
+  "version": "1.0.0",
+  "description": "Database Server of Zeiterfassung",
+  "contributors": [
+    "Alexander Zeug <Alexander.Zeug@stud.fh-rosenheim.de>",
+    "Timm Werner <Timm.Werner@stud.fh-rosenheim.de>",
+    "JonasSchade <Jonas.Schade@stud.fh-rosenheim.de>"
+  ],
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonasSchade/zeiterfassung-db.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JonasSchade/zeiterfassung-db/issues"
+  },
+  "homepage": "https://github.com/JonasSchade/zeiterfassung-db#readme",
+  "dependencies": {
+    "sqlite3": "^3.1.13"
+  }
+}
