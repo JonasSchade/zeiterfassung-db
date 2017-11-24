@@ -32,6 +32,59 @@ app.post('/api/projekte', (req, res) => {
 });
 
 
+/*
+app.get('/api/projekte/', (req, res) => {
+	db.query('select * from projekte')
+		.then((result) => {
+			console.log(result)
+			res.json(result[0]).end()
+		})
+		.catch((err) => {
+			console.log(err)
+			res.status(400).send(err).end()
+		})
+})
+
+app.get('/api/projekte/:id', function (req, res) {
+	db.query('select * from projekte where id=?', [req.params.id])
+		.then((result) => {
+			console.log(result)
+			if (result[0].length > 0) res.json(result[0]).end()
+			else res.status(404).end()
+		})
+		.catch((err) => {
+			console.log(err)
+			res.status(404).end()
+		})
+})
+
+app.delete('/api/projekte/:id', function (req, res) {
+	db.query('delete from projekte where id=?', [req.params.id])
+		.then((result) => {
+			console.log(result)
+			res.status(204).end()
+		})
+		.catch((err) => {
+			console.log(err)
+			res.status(404).end()
+		})
+})
+
+app.post('/api/projekte/', (req, res) => {
+	db.query('insert into projekte (id, name) values (?, ?)', [req.body.id, req.body.name])
+		.then((result) => {
+			console.log(result)
+			res.status(201).json(req.body).end()
+		})
+		.catch((err) => {
+			console.log(err)
+			res.status(400).send(err).end()
+		})
+});
+*/
+
+
+
 app.listen(3000, function (){console.log("Port:3000")});
 
 
