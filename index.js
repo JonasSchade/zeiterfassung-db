@@ -3,27 +3,49 @@ const express = require('express');
 const app = express();
 const bp = require('body-parser');
 app.use(bp.json());
-/*
+
 // open the database
-let db = new sqlite3.Database('./db/chinook.db', sqlite3.OPEN_READWRITE, (err) => {
+let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (err) => {
   if (err) {
     console.error(err.message);
   }
-  console.log('Connected to the chinook database.');
+  console.log('Connected to the Chronos database.');
 });
-*/
+
 
 //anfrage auf /api/projekte > gibt alle projekte zurück
-app.get("/api/projekte/", (req,res) => {
+app.get("/api/roles/", (req,res) => {
 
+  db.all('select * from role', [], (err, result) =>{
+    console.log(result);
+    res.send(result);
+
+    res.status(200).end();
+  });
+
+
+/*
+  db.query('select * from role')
+		.then((result) => {
+			console.log(result);
+      res.status(200);
+			res.json(result[0]).end();
+		})
+		.catch((err) => {
+			console.log(err)
+			res.status(400).send(err).end()
+		})
+    */
+/*
   //zugriff auf DB
   var data = {"Mitarbeitername": "Hans Dampf"}; //hier kommt alles rein, was im body der response stehen soll
 
 
   res.send(data);
   res.status(200).end();
+  */
 });
-
+/*
 app.post('/api/projekte', (req, res) => {
 
   console.log(req.body);
