@@ -12,13 +12,16 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
   console.log('Connected to the Chronos database.');
 });
 
+//add 'Access-Control-Allow-Origin'-ResponseHeader to every get request
+app.get('/*',function(req,res,next){
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+});
 
 //anfrage auf /api/projekte > gibt alle projekte zurück
 app.get("/api/roles/", (req,res) => {
 
-
   db.all('select * from role', [], (err, result) =>{
-    console.log(result);
     res.send(result);
 
     res.status(200).end();
