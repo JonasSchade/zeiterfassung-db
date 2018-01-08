@@ -18,25 +18,43 @@ app.get('/*',function(req,res,next){
     next();
 });
 
-//anfrage auf /api/projekte > gibt alle projekte zurück
+//anfrage auf /api/roles > gibt alle rollen zurück
 app.get("/api/roles/", (req,res) => {
-
   db.all('select * from role', [], (err, result) =>{
     res.send(result);
 
     res.status(200).end();
   });
-
-/*
-  //zugriff auf DB
-  var data = {"Mitarbeitername": "Hans Dampf"}; //hier kommt alles rein, was im body der response stehen soll
-
-
-  res.send(data);
-  res.status(200).end();
-  */
 });
 
+//anfrage auf /api/projekte > gibt alle projekte zurück
+app.get("/api/projekte", (req,res) => {
+  db.all('select * from PROJECT', [], (err, result) =>{
+    res.send(result);
+
+    res.status(200).end();
+  });
+});
+
+//anfrage auf /api/user > gibt alle Benutzer zurück
+app.get("/api/user", (req,res) => {
+  db.all('select * from USER', [], (err, result) =>{
+    res.send(result);
+
+    res.status(200).end();
+  });
+});
+
+//anfrage auf /api/department > gibt alle abteilungen zurück
+app.get("/api/department", (req,res) => {
+  db.all('select * from DEPARTMENT', [], (err, result) =>{
+    res.send(result);
+
+    res.status(200).end();
+  });
+});
+
+//anfrage auf /api/mitarbeiter/:id > gibt mitarbeiter mit bestimmter id zurück
 app.get("/api/mitarbeiter/:id", (req,res) => {
 
   db.all('select * from USER where ID=?', [req.params.id], (err, result) =>{
