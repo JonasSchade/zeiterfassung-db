@@ -18,17 +18,11 @@ app.get('/*',function(req,res,next){
     next();
 });
 
-//anfrage auf /api/roles > gibt alle rollen zurück
-app.get("/api/roles/", (req,res) => {
-  db.all('select * from role', [], (err, result) =>{
-    res.send(result);
 
-    res.status(200).end();
-  });
-});
-
-//anfrage auf /api/projekte > gibt alle projekte zurück
-app.get("/api/projekte", (req,res) => {
+/********************************************************************
+    GET All Entries
+ *******************************************************************/
+app.get("/api/project", (req,res) => {
   db.all('select * from PROJECT', [], (err, result) =>{
     res.send(result);
 
@@ -36,7 +30,6 @@ app.get("/api/projekte", (req,res) => {
   });
 });
 
-//anfrage auf /api/user > gibt alle Benutzer zurück
 app.get("/api/user", (req,res) => {
   db.all('select * from USER', [], (err, result) =>{
     res.send(result);
@@ -45,7 +38,6 @@ app.get("/api/user", (req,res) => {
   });
 });
 
-//anfrage auf /api/department > gibt alle abteilungen zurück
 app.get("/api/department", (req,res) => {
   db.all('select * from DEPARTMENT', [], (err, result) =>{
     res.send(result);
@@ -54,137 +46,67 @@ app.get("/api/department", (req,res) => {
   });
 });
 
-//anfrage auf /api/mitarbeiter/:id > gibt mitarbeiter mit bestimmter id zurück
-app.get("/api/mitarbeiter/:id", (req,res) => {
 
-  db.all('select * from USER where ID=?', [req.params.id], (err, result) =>{
-    console.log(result);
-    res.send(result);
-
-    res.status(200).end();
-  });
-});
-
-app.get("/api/projekte/:id", (req,res) => {
-
+/********************************************************************
+    GET Single Entry
+ *******************************************************************/
+app.get("/api/project/:id", (req,res) => {
   db.all('select * from PROJECT where ID=?', [req.params.id], (err, result) =>{
-    console.log(result);
-    res.send(result);
-
-    res.status(200).end();
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
   });
 });
 
-app.get("/api/abteilungen/:id", (req,res) => {
+app.get("/api/user/:id", (req,res) => {
+  db.all('select * from USER where ID=?', [req.params.id], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no user with given id found
+      res.status(404).end();
+    }
+  });
+});
 
+app.get("/api/department/:id", (req,res) => {
   db.all('select * from DEPARTMENT where ID=?', [req.params.id], (err, result) =>{
-    console.log(result);
-    res.send(result);
-
-    res.status(200).end();
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no department with given id found
+      res.status(404).end();
+    }
   });
 });
 
 
-app.post('/api/mitarbeiter/:id', (req, res) => {
-  req.params.id;
-db.run("INSERT into USER(Firstname,Lastname,LocationID,DepartmentID) VALUES (?,?,?,?)", [req.body.Firstname, req.body.Lastname,req.body.LocationID, req.body.DepartmentID]);
+/********************************************************************
+    POST Requests
+ *******************************************************************/
+app.post('/api/project/', (req, res) => {
+  db.run("INSERT into PROJECT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+
   res.status(200).end();
 });
 
-app.post('/api/projekte/:id', (req, res) => {
-db.run("INSERT into PROJECT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+app.post('/api/user/', (req, res) => {
+  db.run("INSERT into USER(Firstname,Lastname,LocationID,DepartmentID) VALUES (?,?,?,?)", [req.body.Firstname, req.body.Lastname,req.body.LocationID, req.body.DepartmentID]);
+
   res.status(200).end();
 });
 
-app.post('/api/abteilungen/:id', (req, res) => {
-db.run("INSERT into DEPARTMENT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+app.post('/api/department/', (req, res) => {
+  db.run("INSERT into DEPARTMENT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+
   res.status(200).end();
 });
-
-/*
-app.post('/api/projekte', (req, res) => {
-
-  console.log(req.body);
-  res.send('POST request to homepage');
-  res.status(200).end();
-});
-
-
-/*
-app.get('/api/projekte/', (req, res) => {
-	db.query('select * from projekte')
-		.then((result) => {
-			console.log(result)
-			res.json(result[0]).end()
-		})
-		.catch((err) => {
-			console.log(err)
-			res.status(400).send(err).end()
-		})
-})
-
-app.get('/api/projekte/:id', function (req, res) {
-	db.query('select * from projekte where id=?', [req.params.id])
-		.then((result) => {
-			console.log(result)
-			if (result[0].length > 0) res.json(result[0]).end()
-			else res.status(404).end()
-		})
-		.catch((err) => {
-			console.log(err)
-			res.status(404).end()
-		})
-})
-
-app.delete('/api/projekte/:id', function (req, res) {
-	db.query('delete from projekte where id=?', [req.params.id])
-		.then((result) => {
-			console.log(result)
-			res.status(204).end()
-		})
-		.catch((err) => {
-			console.log(err)
-			res.status(404).end()
-		})
-})
-
-app.post('/api/projekte/', (req, res) => {
-	db.query('insert into projekte (id, name) values (?, ?)', [req.body.id, req.body.name])
-		.then((result) => {
-			console.log(result)
-			res.status(201).json(req.body).end()
-		})
-		.catch((err) => {
-			console.log(err)
-			res.status(400).send(err).end()
-		})
-});
-*/
-
 
 
 app.listen(3000, function (){console.log("Port:3000")});
-
-
-
-/*
-
-db.serialize(() => {
-  db.each(`SELECT PlaylistId as id,
-                  Name as name
-           FROM playlists`, (err, row) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log(row.id + "\t" + row.name);
-  });
-});
-
-db.close((err) => {
-  if (err) {
-    console.error(err.message);
-  }
-  console.log('Close the database connection.');
-});
-*/
