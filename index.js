@@ -91,22 +91,51 @@ app.get("/api/department/:id", (req,res) => {
     POST Requests
  *******************************************************************/
 app.post('/api/project/', (req, res) => {
-  db.run("INSERT into PROJECT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+  if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
 
-  res.status(200).end();
+    res.status(400).end();
+  } else {
+    db.run("INSERT into PROJECT(name,manager,description) VALUES (?,?,?)", [req.body.name, req.body.manager, req.body.description]);
+
+    res.status(200).end();
+  }
 });
 
 app.post('/api/user/', (req, res) => {
-  db.run("INSERT into USER(Firstname,Lastname,LocationID,DepartmentID) VALUES (?,?,?,?)", [req.body.Firstname, req.body.Lastname,req.body.LocationID, req.body.DepartmentID]);
+  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/user/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
 
-  res.status(200).end();
+    res.status(400).end();
+  } else {
+    db.run("INSERT into USER(firstname,lastname,departmentid) VALUES (?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid]);
+
+    res.status(200).end();
+  }
 });
 
 app.post('/api/department/', (req, res) => {
-  db.run("INSERT into DEPARTMENT(ID,Name,Manager) VALUES (?,?,?)", [req.params.id, req.body.Name,req.body.Manager]);
+  if (req.body.name == null ||  req.body.manager == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/department/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
 
-  res.status(200).end();
+    res.status(400).end();
+  } else {
+    db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager]);
+
+    res.status(200).end();
+  }
 });
-
 
 app.listen(3000, function (){console.log("Port:3000")});
