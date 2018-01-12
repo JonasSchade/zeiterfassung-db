@@ -12,13 +12,12 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
   console.log('Connected to the Chronos database.');
 });
 
-//add 'Access-Control-Allow-Origin'-ResponseHeader to every get request
-app.get('/*',function(req,res,next){
+//add 'Access-Control-Allow-Origin'-ResponseHeader to every every request
+app.use('/*',function(req,res,next){
     res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
     next();
 });
-
-
 /********************************************************************
     GET All Entries
  *******************************************************************/
