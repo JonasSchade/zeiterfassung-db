@@ -84,19 +84,19 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
-app.get("/api/user_role/:id", (req,res) => {
+app.get("/api/user_role/:userid", (req,res) => {
   db.all('select * from user_role where ID=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
-      //no project with given id found
+      //no role with given id found
       res.status(404).end();
     }
   });
 });
 
-app.get("/api/user_project/:id", (req,res) => {
+app.get("/api/user_project/:userid", (req,res) => {
   db.all('select * from user_project where ID=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -108,37 +108,37 @@ app.get("/api/user_project/:id", (req,res) => {
   });
 });
 
-app.get("/api/time/:id", (req,res) => {
+app.get("/api/time/:userid", (req,res) => {
   db.all('select * from time where ID=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
-      //no project with given id found
+      //no times with given id found
       res.status(404).end();
     }
   });
 });
 
-app.get("/api/project_time/:id", (req,res) => {
+app.get("/api/project_time/:userid", (req,res) => {
   db.all('select * from time where ID=?', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
-      //no project with given id found
+      //no projectttimes with given id found
       res.status(404).end();
     }
   });
 });
 
-app.get("/api/logdata/:id", (req,res) => {
+app.get("/api/logdata/:userid", (req,res) => {
   db.all('select * from logdata where ID=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
-      //no project with given id found
+      //no logdata with given id found
       res.status(404).end();
     }
   });
@@ -194,7 +194,9 @@ app.post('/api/department/', (req, res) => {
     res.status(200).end();
   }
 });
-
+/*
+  Missing POST requests: logdata, user_project, user_role, time, project_time
+*/
 
 /********************************************************************
     PUT Requests
@@ -247,6 +249,10 @@ app.put('/api/department/', (req, res) => {
   }
 });
 
+/*
+  Missing PUT requests: ltogdata, user_project, user_role, time, project_time
+*/
+
 /********************************************************************
     DELETE Requests
  *******************************************************************/
@@ -297,5 +303,9 @@ app.DELETE('/api/department/', (req, res) => {
     res.status(200).end();
   }
 });
+
+/*
+  Missing DELETE requests: ltogdata, user_project, user_role, time, project_time
+*/
 
 app.listen(3000, function (){console.log("Port:3000")});
