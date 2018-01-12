@@ -45,8 +45,6 @@ app.get("/api/department", (req,res) => {
     res.status(200).end();
   });
 });
-
-
 /********************************************************************
     GET Single Entry
  *******************************************************************/
@@ -86,6 +84,65 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
+app.get("/api/user_role/:id", (req,res) => {
+  db.all('select * from user_role where ID=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+app.get("/api/user_project/:id", (req,res) => {
+  db.all('select * from user_project where ID=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+app.get("/api/time/:id", (req,res) => {
+  db.all('select * from time where ID=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+app.get("/api/project_time/:id", (req,res) => {
+  db.all('select * from time where ID=?', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+app.get("/api/logdata/:id", (req,res) => {
+  db.all('select * from logdata where ID=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
 
 /********************************************************************
     POST Requests
@@ -133,6 +190,109 @@ app.post('/api/department/', (req, res) => {
     res.status(400).end();
   } else {
     db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager]);
+
+    res.status(200).end();
+  }
+});
+
+
+/********************************************************************
+    PUT Requests
+ *******************************************************************/
+app.put('/api/project/', (req, res) => {
+  if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.body.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.put('/api/user/', (req, res) => {
+  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/user/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.put('/api/department/', (req, res) => {
+  if (req.body.name == null ||  req.body.manager == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/department/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.body.id]);
+
+    res.status(200).end();
+  }
+});
+
+/********************************************************************
+    DELETE Requests
+ *******************************************************************/
+app.DELETE('/api/project/', (req, res) => {
+  if (req.body.id == null) {
+    console.log("");
+    console.log("Bad DELETE Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("DELETE FROM user WHERE id=?", [req.body.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.DELETE('/api/user/', (req, res) => {
+  if (req.body.id == null) {
+    console.log("");
+    console.log("Bad DELETE Request to /api/user/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("DELETE FROM user WHERE id=?", [req.body.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.DELETE('/api/department/', (req, res) => {
+  if (req.body.id == null) {
+    console.log("");
+    console.log("Bad DELETE Request to /api/department/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("DELETE FROM department WHERE id=?", [req.body.id]);
 
     res.status(200).end();
   }
