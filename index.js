@@ -255,7 +255,7 @@ app.put('/api/department/', (req, res) => {
 /********************************************************************
     DELETE Requests
  *******************************************************************/
-app.DELETE('/api/project/', (req, res) => {
+app.delete('/api/project/', (req, res) => {
   if (req.body.id == null) {
     console.log("");
     console.log("Bad DELETE Request to /api/project/");
@@ -271,7 +271,7 @@ app.DELETE('/api/project/', (req, res) => {
   }
 });
 
-app.DELETE('/api/user/', (req, res) => {
+app.delete('/api/user/', (req, res) => {
   if (req.body.id == null) {
     console.log("");
     console.log("Bad DELETE Request to /api/user/");
@@ -287,7 +287,7 @@ app.DELETE('/api/user/', (req, res) => {
   }
 });
 
-app.DELETE('/api/department/', (req, res) => {
+app.delete('/api/department/', (req, res) => {
   if (req.body.id == null) {
     console.log("");
     console.log("Bad DELETE Request to /api/department/");
