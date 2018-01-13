@@ -83,10 +83,11 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
-app.get("/api/user_role/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
-  db.all('select * from user_role where ID=?', [req.params.id], (err, result) =>{
+/*Not single Entries*/
+app.get("/api/user_role/:userid", (req,res) => {
+  db.all('select * from user_role where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
-      res.send(result[0]);
+      res.send(result);
       res.status(200).end();
     } else {
       //no role with given id found
@@ -94,11 +95,11 @@ app.get("/api/user_role/:id", (req,res) => { //TODO: throws error: "TypeError: C
     }
   });
 });
-
-app.get("/api/user_project/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
-  db.all('select * from user_project where ID=?', [req.params.id], (err, result) =>{
+/*Not single Entries*/
+app.get("/api/user_project/:userid", (req,res) => {
+  db.all('select * from user_project where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
-      res.send(result[0]);
+      res.send(result);
       res.status(200).end();
     } else {
       //no project with given id found
@@ -106,11 +107,11 @@ app.get("/api/user_project/:id", (req,res) => { //TODO: throws error: "TypeError
     }
   });
 });
-
-app.get("/api/time/:userid", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
-  db.all('select * from time where ID=?', [req.params.userid], (err, result) =>{
+/*Not single Entries*/
+app.get("/api/time/:userid", (req,res) => {
+  db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
-      res.send(result[0]);
+      res.send(result);
       res.status(200).end();
     } else {
       //no times with given id found
@@ -118,21 +119,21 @@ app.get("/api/time/:userid", (req,res) => { //TODO: throws error: "TypeError: Ca
     }
   });
 });
-
-app.get("/api/project_time/:id", (req,res) => { //TODO: implement other params
-  db.all('select * from time where ID=?', [req.params.id, req.params.date, req.params.projectid], (err, result) =>{
+/*Not single Entries*/
+app.get("/api/project_time/:userid", (req,res) => { //TODO: implement other params
+  db.all('select * from project_time where userid=?', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
     if (result.length > 0) {
-      res.send(result[0]);
+      res.send(result);
       res.status(200).end();
     } else {
-      //no projectttimes with given id found
+      //no projecttimes with given id found
       res.status(404).end();
     }
   });
 });
 
-app.get("/api/logdata/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
-  db.all('select * from logdata where ID=?', [req.params.id], (err, result) =>{
+app.get("/api/logdata/:userid", (req,res) => {
+  db.all('select * from logdata where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
@@ -142,7 +143,6 @@ app.get("/api/logdata/:id", (req,res) => { //TODO: throws error: "TypeError: Can
     }
   });
 });
-
 /********************************************************************
     POST Requests
  *******************************************************************/
