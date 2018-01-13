@@ -83,8 +83,8 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
-app.get("/api/user_role/:userid", (req,res) => {
-  db.all('select * from user_role where ID=?', [req.params.userid], (err, result) =>{
+app.get("/api/user_role/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
+  db.all('select * from user_role where ID=?', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
@@ -95,8 +95,8 @@ app.get("/api/user_role/:userid", (req,res) => {
   });
 });
 
-app.get("/api/user_project/:userid", (req,res) => {
-  db.all('select * from user_project where ID=?', [req.params.userid], (err, result) =>{
+app.get("/api/user_project/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
+  db.all('select * from user_project where ID=?', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
@@ -107,7 +107,7 @@ app.get("/api/user_project/:userid", (req,res) => {
   });
 });
 
-app.get("/api/time/:userid", (req,res) => {
+app.get("/api/time/:userid", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
   db.all('select * from time where ID=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -119,8 +119,8 @@ app.get("/api/time/:userid", (req,res) => {
   });
 });
 
-app.get("/api/project_time/:userid", (req,res) => {
-  db.all('select * from time where ID=?', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+app.get("/api/project_time/:id", (req,res) => { //TODO: implement other params
+  db.all('select * from time where ID=?', [req.params.id, req.params.date, req.params.projectid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
@@ -131,8 +131,8 @@ app.get("/api/project_time/:userid", (req,res) => {
   });
 });
 
-app.get("/api/logdata/:userid", (req,res) => {
-  db.all('select * from logdata where ID=?', [req.params.userid], (err, result) =>{
+app.get("/api/logdata/:id", (req,res) => { //TODO: throws error: "TypeError: Cannot read property 'length' of undefined"
+  db.all('select * from logdata where ID=?', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
@@ -256,7 +256,7 @@ app.put('/api/department/:id', (req, res) => {
     DELETE Requests
  *******************************************************************/
 app.delete('/api/project/:id', (req, res) => {
-  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
+  db.run("DELETE FROM project WHERE id=?", [req.params.id]);
 
   res.status(200).end();
 });
