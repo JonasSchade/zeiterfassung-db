@@ -97,13 +97,14 @@ app.get("/api/user_role/:userid", (req,res) => {
 });
 /*Not single Entries*/
 app.get("/api/user_project/:userid", (req,res) => {
-  db.all('select * from user_project where userid=?', [req.params.userid], (err, result) =>{
+  db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
       res.status(200).end();
     } else {
       //no project with given id found
-      res.status(404).end();
+      res.send([]);
+      res.status(200).end();
     }
   });
 });
