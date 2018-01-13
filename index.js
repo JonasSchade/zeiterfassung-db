@@ -200,7 +200,7 @@ app.post('/api/department/', (req, res) => {
 /********************************************************************
     PUT Requests
  *******************************************************************/
-app.put('/api/project/', (req, res) => {
+app.put('/api/project/:id', (req, res) => {
   if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
     console.log("");
     console.log("Bad PUT Request to /api/project/");
@@ -210,13 +210,13 @@ app.put('/api/project/', (req, res) => {
 
     res.status(400).end();
   } else {
-    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.body.id]);
+    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.params.id]);
 
     res.status(200).end();
   }
 });
 
-app.put('/api/user/', (req, res) => {
+app.put('/api/user/:id', (req, res) => {
   if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user/");
@@ -226,13 +226,13 @@ app.put('/api/user/', (req, res) => {
 
     res.status(400).end();
   } else {
-    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.id]);
+    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.params.id]);
 
     res.status(200).end();
   }
 });
 
-app.put('/api/department/', (req, res) => {
+app.put('/api/department/:id', (req, res) => {
   if (req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad PUT Request to /api/department/");
@@ -242,7 +242,7 @@ app.put('/api/department/', (req, res) => {
 
     res.status(400).end();
   } else {
-    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.body.id]);
+    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.params.id]);
 
     res.status(200).end();
   }
@@ -255,52 +255,22 @@ app.put('/api/department/', (req, res) => {
 /********************************************************************
     DELETE Requests
  *******************************************************************/
-app.delete('/api/project/', (req, res) => {
-  if (req.body.id == null) {
-    console.log("");
-    console.log("Bad DELETE Request to /api/project/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
+app.delete('/api/project/:id', (req, res) => {
+  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
 
-    res.status(400).end();
-  } else {
-    db.run("DELETE FROM user WHERE id=?", [req.body.id]);
-
-    res.status(200).end();
-  }
+  res.status(200).end();
 });
 
-app.delete('/api/user/', (req, res) => {
-  if (req.body.id == null) {
-    console.log("");
-    console.log("Bad DELETE Request to /api/user/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
+app.delete('/api/user/:id', (req, res) => {
+  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
 
-    res.status(400).end();
-  } else {
-    db.run("DELETE FROM user WHERE id=?", [req.body.id]);
-
-    res.status(200).end();
-  }
+  res.status(200).end();
 });
 
-app.delete('/api/department/', (req, res) => {
-  if (req.body.id == null) {
-    console.log("");
-    console.log("Bad DELETE Request to /api/department/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
+app.delete('/api/department/:id', (req, res) => {
+  db.run("DELETE FROM department WHERE id=?", [req.params.id]);
 
-    res.status(400).end();
-  } else {
-    db.run("DELETE FROM department WHERE id=?", [req.body.id]);
-
-    res.status(200).end();
-  }
+  res.status(200).end();
 });
 
 /*
