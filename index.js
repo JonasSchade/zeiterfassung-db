@@ -44,8 +44,6 @@ app.get("/api/department", (req,res) => {
     res.status(200).end();
   });
 });
-
-
 /********************************************************************
     GET Single Entry
  *******************************************************************/
@@ -85,7 +83,66 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
+/*Not single Entries*/
+app.get("/api/user_role/:userid", (req,res) => {
+  db.all('select * from user_role where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no role with given id found
+      res.status(404).end();
+    }
+  });
+});
+/*Not single Entries*/
+app.get("/api/user_project/:userid", (req,res) => {
+  db.all('select * from user_project where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+/*Not single Entries*/
+app.get("/api/time/:userid", (req,res) => {
+  db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no times with given id found
+      res.status(404).end();
+    }
+  });
+});
+/*Not single Entries*/
+app.get("/api/project_time/:userid", (req,res) => { //TODO: implement other params
+  db.all('select * from project_time where userid=?', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given id found
+      res.status(404).end();
+    }
+  });
+});
 
+app.get("/api/logdata/:userid", (req,res) => {
+  db.all('select * from logdata where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no logdata with given id found
+      res.status(404).end();
+    }
+  });
+});
 /********************************************************************
     POST Requests
  *******************************************************************/
@@ -136,5 +193,88 @@ app.post('/api/department/', (req, res) => {
     res.status(200).end();
   }
 });
+/*
+  Missing POST requests: logdata, user_project, user_role, time, project_time
+*/
+
+/********************************************************************
+    PUT Requests
+ *******************************************************************/
+app.put('/api/project/:id', (req, res) => {
+  if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.put('/api/user/:id', (req, res) => {
+  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/user/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+app.put('/api/department/:id', (req, res) => {
+  if (req.body.name == null ||  req.body.manager == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/department/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+/*
+  Missing PUT requests: ltogdata, user_project, user_role, time, project_time
+*/
+
+/********************************************************************
+    DELETE Requests
+ *******************************************************************/
+app.delete('/api/project/:id', (req, res) => {
+  db.run("DELETE FROM project WHERE id=?", [req.params.id]);
+
+  res.status(200).end();
+});
+
+app.delete('/api/user/:id', (req, res) => {
+  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
+
+  res.status(200).end();
+});
+
+app.delete('/api/department/:id', (req, res) => {
+  db.run("DELETE FROM department WHERE id=?", [req.params.id]);
+
+  res.status(200).end();
+});
+
+/*
+  Missing DELETE requests: ltogdata, user_project, user_role, time, project_time
+*/
 
 app.listen(3000, function (){console.log("Port:3000")});
