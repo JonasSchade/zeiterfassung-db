@@ -109,6 +109,19 @@ app.get("/api/user_project/:userid", (req,res) => {
   });
 });
 /*Not single Entries*/
+app.get("/api/project_users/:projectid", (req,res) => {
+  db.all('select USER.* from USER LEFT JOIN user_project ON USER.ID = user_project.userid WHERE user_project.projectid=?', [req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.send([]);
+      res.status(200).end();
+    }
+  });
+});
+/*Not single Entries*/
 app.get("/api/time/:userid", (req,res) => {
   db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
