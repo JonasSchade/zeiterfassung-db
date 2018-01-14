@@ -162,6 +162,7 @@ app.get("/api/project_time/:userid", (req,res) => {
 /********************************************************************
     complex GET Requests
  *******************************************************************/
+ //get time worked on one project on a date by userid
  app.get("/api/project_time/:userid/:date/:projectid", (req,res) => {
    db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
      if (result.length > 0) {
@@ -173,6 +174,58 @@ app.get("/api/project_time/:userid", (req,res) => {
      }
    });
  });
+
+ //get sum of worked hours for a project
+ app.get("/api/time_by_project/:projectid", (req,res) => {
+   db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
+     if (result.length > 0) {
+       res.send(result);
+       res.status(200).end();
+     } else {
+       //no projecttimes with given userid, date and projectid found
+       res.status(404).end();
+     }
+   });
+ });
+
+//get sum by user for one project
+ app.get("/api/time_by_user_project/:projectid/:userid", (req,res) => {
+   db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
+     if (result.length > 0) {
+       res.send(result);
+       res.status(200).end();
+     } else {
+       //no projecttimes with given userid, date and projectid found
+       res.status(404).end();
+     }
+   });
+ });
+
+//get sum on a day by the userid
+ app.get("/api/time_by_user_date/:userid/:date", (req,res) => {
+   db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
+     if (result.length > 0) {
+       res.send(result);
+       res.status(200).end();
+     } else {
+       //no projecttimes with given userid, date and projectid found
+       res.status(404).end();
+     }
+   });
+ });
+
+ //get sum of worked hours of userid
+  app.get("/api/time_by_date_project/:projectid/:date", (req,res) => {
+    db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.date=?', [req.params.projectid, req.params.date], (err, result) =>{
+      if (result.length > 0) {
+        res.send(result);
+        res.status(200).end();
+      } else {
+        //no projecttimes with given userid, date and projectid found
+        res.status(404).end();
+      }
+    });
+  });
 
 /********************************************************************
     POST Requests
