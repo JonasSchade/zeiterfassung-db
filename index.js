@@ -24,7 +24,7 @@ app.use('/*',function(req,res,next){
     next();
 });
 
-app.post("/api/token", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+app.post("/api/token", (req,res) => {
   if (req.body.username == null ||  req.body.pw == null) {
     console.log("");
     console.log("Bad POST Request to /api/token");
