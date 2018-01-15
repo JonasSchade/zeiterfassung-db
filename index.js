@@ -20,7 +20,7 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
 //add 'Access-Control-Allow-Origin'-ResponseHeader to every every request
 app.use('/*',function(req,res,next){
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
 
@@ -46,7 +46,7 @@ app.post("/api/token", (req,res) => {
       };
 
       var token = jwt.sign(payload, superSuperSecret, {
-        expiresIn: "30s"
+        expiresIn: "30m"
       });
 
       res.send({"success": true, "token": token});
