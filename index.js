@@ -42,7 +42,11 @@ app.post("/api/token", (req,res) => {
       }
 
       var payload = {
-        role: ""
+        admin: false,
+        projectmanager: false,
+        departmentmanager: false,
+        id: 0,
+        userdisplayname: "",
       };
 
       var token = jwt.sign(payload, superSuperSecret, {
@@ -55,7 +59,18 @@ app.post("/api/token", (req,res) => {
   }
 });
 
-app.get("/api/authenticate", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+app.get("/api/authenticate", (req,res) => {
+
+  var token = req.get("Authorization").replace(/(B|b)earer( )*/i,"");
+
+  try {
+    var decoded = jwt.verify(token, superSuperSecret);
+    decoded.loggedIn = true;
+    res.send(decoded);
+  } catch(err) {
+    res.send({loggedIn: false});
+  }
+
   res.status(200).end();
 });
 
