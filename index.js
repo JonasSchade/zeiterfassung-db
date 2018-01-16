@@ -41,15 +41,13 @@ app.post("/api/token", (req,res) => {
         return;
       }
 
-      db.get("select user.admin, count(project.userid), count(department.userid), user.id, user.firstname, user.lastname from user, project, department where user.id=? and department.manager=? and project.manager=?", [result.userid, result.userid, result.userid], (err, result) => {
-        console.log("Test:");
-        console.log(result);
+      db.get("SELECT user.admin, p.counter as pcounter, d.counter as dcounter, user.firstname, user.lastname from (select count(*) as counter FROM project where project.manager=?) as p, (SELECT count(*) as counter FROM department where department.manager=?) as d, user where user.id=?", [result.userid, result.userid, result.userid], (err, result2) => {
         var payload = {
-          admin: false,
-          projectmanager: false,
-          departmentmanager: false,
-          id: 0,
-          userdisplayname: "Testdude",
+          admin: (result2.admin == 1),
+          projectmanager: (result2.pcounter != 0),
+          departmentmanager: (result2.dcounter != 0),
+          id: result.userid,
+          userdisplayname: (result2.firstname + " " + result2.lastname),
         };
 
         var token = jwt.sign(payload, superSuperSecret, {
