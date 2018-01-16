@@ -2,6 +2,11 @@ const sqlite3 = require('sqlite3').verbose();
 const express = require('express');
 const app = express();
 const bp = require('body-parser');
+const jwt = require('jsonwebtoken');
+const jwtMiddleware = require('express-jwt');
+
+const superSuperSecret = "superSuperSecret";
+
 app.use(bp.json());
 
 // open the database
@@ -15,13 +20,74 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
 //add 'Access-Control-Allow-Origin'-ResponseHeader to every every request
 app.use('/*',function(req,res,next){
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
+
+app.post("/api/token", (req,res) => {
+  if (req.body.username == null ||  req.body.pw == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/token");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.get("select * from logdata where username=? and password=?", [req.body.username, req.body.pw], (err, result) => {
+      if (result == null) {
+        res.send({"success": false});
+        res.status(404).end();
+        return;
+      }
+
+      db.get("SELECT user.admin, p.counter as pcounter, d.counter as dcounter, user.firstname, user.lastname from (select count(*) as counter FROM project where project.manager=?) as p, (SELECT count(*) as counter FROM department where department.manager=?) as d, user where user.id=?", [result.userid, result.userid, result.userid], (err, result2) => {
+        var payload = {
+          admin: (result2.admin == 1),
+          projectmanager: (result2.pcounter != 0),
+          departmentmanager: (result2.dcounter != 0),
+          id: result.userid,
+          userdisplayname: (result2.firstname + " " + result2.lastname),
+        };
+
+        var token = jwt.sign(payload, superSuperSecret, {
+          expiresIn: "30m"
+        });
+
+        res.send({"success": true, "token": token});
+        res.status(200).end();
+      });
+    });
+  }
+});
+
+app.get("/api/authenticate", (req,res) => {
+
+  if (req.get("Authorization") == null) {
+    res.send({loggedin: false});
+    res.status(200).end();
+    return;
+  }
+
+  var token = req.get("Authorization").replace(/(B|b)earer( )*/i,"");
+
+  try {
+    var decoded = jwt.verify(token, superSuperSecret);
+    decoded.loggedin = true;
+    res.send(decoded);
+  } catch(err) {
+    res.send({loggedin: false});
+  }
+
+  res.status(200).end();
+});
+
+
+
 /********************************************************************
     GET All Entries
  *******************************************************************/
-app.get("/api/project", (req,res) => {
+app.get("/api/project", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select project.*, user.firstname, user.lastname from project, user where project.manager=user.id', [], (err, result) =>{
     res.send(result);
 
@@ -29,7 +95,7 @@ app.get("/api/project", (req,res) => {
   });
 });
 
-app.get("/api/user", (req,res) => {
+app.get("/api/user", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select user.*, department.name from user, department where user.departmentid=department.id', [], (err, result) =>{
     res.send(result);
 
@@ -37,7 +103,7 @@ app.get("/api/user", (req,res) => {
   });
 });
 
-app.get("/api/department", (req,res) => {
+app.get("/api/department", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select department.*, user.firstname, user.lastname from department, user where department.manager=user.id', [], (err, result) =>{
     res.send(result);
 
@@ -47,7 +113,7 @@ app.get("/api/department", (req,res) => {
 /********************************************************************
     GET Single Entry
  *******************************************************************/
-app.get("/api/project/:id", (req,res) => {
+app.get("/api/project/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select project.*, user.firstname, user.lastname from project, user where project.ID=? and project.manager=user.id', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -59,7 +125,7 @@ app.get("/api/project/:id", (req,res) => {
   });
 });
 
-app.get("/api/user/:id", (req,res) => {
+app.get("/api/user/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select user.*, department.name from user,department where user.id=? and user.departmentid=department.id', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -71,7 +137,7 @@ app.get("/api/user/:id", (req,res) => {
   });
 });
 
-app.get("/api/department/:id", (req,res) => {
+app.get("/api/department/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select department.*, user.firstname, user.lastname from department, user where department.id=? and department.manager=user.id', [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -83,7 +149,7 @@ app.get("/api/department/:id", (req,res) => {
   });
 });
 
-app.get("/api/logdata/:userid", (req,res) => {
+app.get("/api/logdata/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from logdata where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
@@ -97,19 +163,7 @@ app.get("/api/logdata/:userid", (req,res) => {
 /********************************************************************
     GET Multiple Entries by parameter
  *******************************************************************/
-app.get("/api/user_role/:userid", (req,res) => {
-  db.all('select * from user_role where userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no role with given userid found
-      res.status(404).end();
-    }
-  });
-});
-
-app.get("/api/user_project/:userid", (req,res) => {
+app.get("/api/user_project/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
@@ -122,7 +176,7 @@ app.get("/api/user_project/:userid", (req,res) => {
   });
 });
 /*Not single Entries*/
-app.get("/api/project_users/:projectid", (req,res) => {
+app.get("/api/project_users/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select USER.* from USER LEFT JOIN user_project ON USER.ID = user_project.userid WHERE user_project.projectid=?', [req.params.projectid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
@@ -135,7 +189,7 @@ app.get("/api/project_users/:projectid", (req,res) => {
   });
 });
 /*Not single Entries*/
-app.get("/api/time/:userid", (req,res) => {
+app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
@@ -147,7 +201,7 @@ app.get("/api/time/:userid", (req,res) => {
   });
 });
 
-app.get("/api/project_time/:userid", (req,res) => {
+app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from project_time where userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
@@ -163,7 +217,7 @@ app.get("/api/project_time/:userid", (req,res) => {
     complex GET Requests
  *******************************************************************/
  //get time worked on one project on a date by userid
- app.get("/api/project_time/:userid/:date/:projectid", (req,res) => {
+ app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
    db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
      if (result.length > 0) {
        res.send(result);
@@ -176,7 +230,7 @@ app.get("/api/project_time/:userid", (req,res) => {
  });
 
  //get sum of worked hours for a project
- app.get("/api/time_by_project/:projectid", (req,res) => {
+ app.get("/api/time_by_project/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
    db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
      if (result.length > 0) {
        res.send(result);
@@ -189,7 +243,7 @@ app.get("/api/project_time/:userid", (req,res) => {
  });
 
 //get sum by user for one project
- app.get("/api/time_by_user_project/:projectid/:userid", (req,res) => {
+ app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
    db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
      if (result.length > 0) {
        res.send(result);
@@ -202,7 +256,7 @@ app.get("/api/project_time/:userid", (req,res) => {
  });
 
 //get sum on a day by the userid
- app.get("/api/time_by_user_date/:userid/:date", (req,res) => {
+ app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
    db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
      if (result.length > 0) {
        res.send(result);
@@ -215,7 +269,7 @@ app.get("/api/project_time/:userid", (req,res) => {
  });
 
  //get sum of worked hours of userid
-  app.get("/api/time_by_date_project/:projectid/:date", (req,res) => {
+  app.get("/api/time_by_date_project/:projectid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
     db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.date=?', [req.params.projectid, req.params.date], (err, result) =>{
       if (result.length > 0) {
         res.send(result);
@@ -230,7 +284,7 @@ app.get("/api/project_time/:userid", (req,res) => {
 /********************************************************************
     POST Requests
  *******************************************************************/
-app.post('/api/project/', (req, res) => {
+app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
     console.log("");
     console.log("Bad POST Request to /api/project/");
@@ -246,7 +300,7 @@ app.post('/api/project/', (req, res) => {
   }
 });
 
-app.post('/api/user/', (req, res) => {
+app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
     console.log("");
     console.log("Bad POST Request to /api/user/");
@@ -262,7 +316,7 @@ app.post('/api/user/', (req, res) => {
   }
 });
 
-app.post('/api/department/', (req, res) => {
+app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad POST Request to /api/department/");
@@ -278,7 +332,7 @@ app.post('/api/department/', (req, res) => {
   }
 });
 
-app.post('/api/logdata/', (req, res) => {
+app.post('/api/logdata/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
     console.log("");
     console.log("Bad POST Request to /api/logdata/");
@@ -294,7 +348,7 @@ app.post('/api/logdata/', (req, res) => {
   }
 });
 
-app.post('/api/user_project/', (req, res) => {
+app.post('/api/user_project/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.userid == null ||  req.body.projectid == null) {
     console.log("");
     console.log("Bad POST Request to /api/user_project/");
@@ -310,23 +364,7 @@ app.post('/api/user_project/', (req, res) => {
   }
 });
 
-app.post('/api/user_role/', (req, res) => {
-  if (req.body.userid == null ||  req.body.roleid == null) {
-    console.log("");
-    console.log("Bad POST Request to /api/user_role/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("INSERT into user_role(userid, roleid) VALUES (?,?)", [req.body.userid, req.body.roleid]);
-
-    res.status(200).end();
-  }
-});
-
-app.post('/api/time/', (req, res) => {
+app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null ||  req.body.userid == null) {
     console.log("");
     console.log("Bad POST Request to /api/time/");
@@ -342,7 +380,7 @@ app.post('/api/time/', (req, res) => {
   }
 });
 
-app.post('/api/project_time/', (req, res) => {
+app.post('/api/project_time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.userid == null ||  req.body.projectid == null ||  req.body.duration == null) {
     console.log("");
     console.log("Bad POST Request to /api/project_time/");
@@ -361,7 +399,7 @@ app.post('/api/project_time/', (req, res) => {
 /********************************************************************
     PUT Requests
  *******************************************************************/
-app.put('/api/project/:id', (req, res) => {
+app.put('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.id == null ||req.body.name == null ||  req.body.manager == null || req.body.description == null) {
     console.log("");
     console.log("Bad PUT Request to /api/project/");
@@ -377,7 +415,7 @@ app.put('/api/project/:id', (req, res) => {
   }
 });
 
-app.put('/api/user/:id', (req, res) => {
+app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.id == null ||req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user/");
@@ -393,7 +431,7 @@ app.put('/api/user/:id', (req, res) => {
   }
 });
 
-app.put('/api/department/:id', (req, res) => {
+app.put('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.id == null ||req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad PUT Request to /api/department/");
@@ -409,7 +447,7 @@ app.put('/api/department/:id', (req, res) => {
   }
 });
 
-app.put('/api/logdata/:userid', (req, res) => {
+app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null ||req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
     console.log("");
     console.log("Bad PUT Request to /api/logdata/");
@@ -425,7 +463,7 @@ app.put('/api/logdata/:userid', (req, res) => {
   }
 });
 
-app.put('/api/user_project/:userid', (req, res) => {
+app.put('/api/user_project/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null || req.body.userid == null ||  req.body.projectid == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user_project/");
@@ -441,23 +479,7 @@ app.put('/api/user_project/:userid', (req, res) => {
   }
 });
 
-app.put('/api/user_role/:userid', (req, res) => {
-  if (req.param.userid == null || req.body.name == null ||  req.body.manager == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/user_role/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("UPDATE user_role SET roleid=?  WHERE userid=?", [req.body.roleid, req.params.userid]);
-
-    res.status(200).end();
-  }
-});
-
-app.put('/api/time/:userid/:date', (req, res) => {
+app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null || req.param.date == null || req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user_role/");
@@ -473,7 +495,7 @@ app.put('/api/time/:userid/:date', (req, res) => {
   }
 });
 
-app.put('/api/project_time/:userid/:date/:projectid', (req, res) => {
+app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null || req.param.date == null || req.param.projectid == null || req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad PUT Request to /api/project_time/");
@@ -492,36 +514,36 @@ app.put('/api/project_time/:userid/:date/:projectid', (req, res) => {
 /********************************************************************
     DELETE Requests
  *******************************************************************/
-app.delete('/api/project/:id', (req, res) => {
+app.delete('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM project WHERE id=?", [req.params.id]);
   res.status(200).end();
 });
 
-app.delete('/api/user/:id', (req, res) => {
+app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM user WHERE id=?", [req.params.id]);
 
   res.status(200).end();
 });
 
-app.delete('/api/department/:id', (req, res) => {
+app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM department WHERE id=?", [req.params.id]);
 
   res.status(200).end();
 });
 
-app.delete('/api/logdata/:userid', (req, res) => {
+app.delete('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM logdata WHERE userid=?", [req.params.userid]);
 
   res.status(200).end();
 });
 
-app.delete('/api/user_project/:userid', (req, res) => {
+app.delete('/api/user_project/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM user_project WHERE userid=?", [req.params.userid]);
 
   res.status(200).end();
 });
 
-app.delete('/api/user_role/:userid/:roleid', (req, res) => {
+app.delete('/api/user_role/:userid/:roleid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM user_role WHERE userid=? and roleid=?", [req.params.userid, req.params.roleid]);
 
   res.status(200).end();
