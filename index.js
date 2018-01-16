@@ -41,8 +41,7 @@ app.post("/api/token", (req,res) => {
         return;
       }
 
-      db.get(/*TODO*/, [result.userid], (err, result) => {
-
+      db.get("Select user.admin, count(), count(), user.id, user.firstname, user.lastname from user, projects, department where user.id=? and department.userid=? and project.userid=?", [result.userid, result.userid, result.userid], (err, result) => {
         var payload = {
           admin: false,
           projectmanager: false,
@@ -164,18 +163,6 @@ app.get("/api/logdata/:userid", jwtMiddleware({secret: superSuperSecret}), (req,
 /********************************************************************
     GET Multiple Entries by parameter
  *******************************************************************/
-app.get("/api/user_role/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select * from user_role where userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no role with given userid found
-      res.status(404).end();
-    }
-  });
-});
-
 app.get("/api/user_project/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
     if (result.length > 0) {
@@ -377,22 +364,6 @@ app.post('/api/user_project/', jwtMiddleware({secret: superSuperSecret}), (req,r
   }
 });
 
-app.post('/api/user_role/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.userid == null ||  req.body.roleid == null) {
-    console.log("");
-    console.log("Bad POST Request to /api/user_role/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("INSERT into user_role(userid, roleid) VALUES (?,?)", [req.body.userid, req.body.roleid]);
-
-    res.status(200).end();
-  }
-});
-
 app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null ||  req.body.userid == null) {
     console.log("");
@@ -503,22 +474,6 @@ app.put('/api/user_project/:userid', jwtMiddleware({secret: superSuperSecret}), 
     res.status(400).end();
   } else {
     db.run("UPDATE user_project SET projectid=?  WHERE userid=?", [req.body.projectid, req.params.userid]);
-
-    res.status(200).end();
-  }
-});
-
-app.put('/api/user_role/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.userid == null || req.body.name == null ||  req.body.manager == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/user_role/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("UPDATE user_role SET roleid=?  WHERE userid=?", [req.body.roleid, req.params.userid]);
 
     res.status(200).end();
   }
