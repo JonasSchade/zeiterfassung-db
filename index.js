@@ -41,7 +41,9 @@ app.post("/api/token", (req,res) => {
         return;
       }
 
-      db.get("Select user.admin, count(), count(), user.id, user.firstname, user.lastname from user, projects, department where user.id=? and department.userid=? and project.userid=?", [result.userid, result.userid, result.userid], (err, result) => {
+      db.get("select user.admin, count(project.userid), count(department.userid), user.id, user.firstname, user.lastname from user, project, department where user.id=? and department.manager=? and project.manager=?", [result.userid, result.userid, result.userid], (err, result) => {
+        console.log("Test:");
+        console.log(result);
         var payload = {
           admin: false,
           projectmanager: false,
