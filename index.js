@@ -41,34 +41,43 @@ app.post("/api/token", (req,res) => {
         return;
       }
 
-      var payload = {
-        admin: false,
-        projectmanager: false,
-        departmentmanager: false,
-        id: 0,
-        userdisplayname: "",
-      };
+      db.get(/*TODO*/, [result.userid], (err, result) => {
 
-      var token = jwt.sign(payload, superSuperSecret, {
-        expiresIn: "30m"
+        var payload = {
+          admin: false,
+          projectmanager: false,
+          departmentmanager: false,
+          id: 0,
+          userdisplayname: "Testdude",
+        };
+
+        var token = jwt.sign(payload, superSuperSecret, {
+          expiresIn: "30m"
+        });
+
+        res.send({"success": true, "token": token});
+        res.status(200).end();
       });
-
-      res.send({"success": true, "token": token});
-      res.status(200).end();
     });
   }
 });
 
 app.get("/api/authenticate", (req,res) => {
 
+  if (req.get("Authorization") == null) {
+    res.send({loggedin: false});
+    res.status(200).end();
+    return;
+  }
+
   var token = req.get("Authorization").replace(/(B|b)earer( )*/i,"");
 
   try {
     var decoded = jwt.verify(token, superSuperSecret);
-    decoded.loggedIn = true;
+    decoded.loggedin = true;
     res.send(decoded);
   } catch(err) {
-    res.send({loggedIn: false});
+    res.send({loggedin: false});
   }
 
   res.status(200).end();
