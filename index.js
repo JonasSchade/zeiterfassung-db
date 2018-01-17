@@ -21,6 +21,7 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
 app.use('/*',function(req,res,next){
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Methods', '*')
     next();
 });
 
@@ -430,7 +431,7 @@ app.post('/api/project_time/', jwtMiddleware({secret: superSuperSecret}), (req,r
     PUT Requests
  *******************************************************************/
 app.put('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.id == null ||req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+  if (req.params.id == null || req.body.name == null ||  req.body.manager == null || req.body.description == null) {
     console.log("");
     console.log("Bad PUT Request to /api/project/");
     console.log("Request Body:");
@@ -539,6 +540,37 @@ app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: sup
 
     res.status(200).end();
   }
+});
+
+
+//this will add users to a specific project but will also every other user from the given project
+app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.projectid]);
+
+  for (var i = 0; i < req.body.length; i++) {
+    var el = req.body[i]
+    if (el.id == null) {
+      console.log("");
+      console.log("Bad POST Request to /api/project_users/");
+      console.log("Request Body:");
+      console.log(req.body);
+      console.log("Element (Index "+ i+"):");
+      console.log(el)
+      console.log("");
+
+      res.status(400).end();
+    } else {
+      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
+
+    }
+  };
+
+  res.status(200).end();
 });
 
 /********************************************************************
