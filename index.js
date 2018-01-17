@@ -294,9 +294,12 @@ app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) =
 
     res.status(400).end();
   } else {
-    db.run("INSERT into PROJECT(name,manager,description) VALUES (?,?,?)", [req.body.name, req.body.manager, req.body.description]);
-
-    res.status(200).end();
+    db.run("INSERT into PROJECT(name,manager,description) VALUES (?,?,?)", [req.body.name, req.body.manager, req.body.description], () => {
+      db.get("SELECT max(id) as id FROM PROJECT", [], (err,result) => {
+        res.send(result);
+        res.status(200).end();
+      });
+    });
   }
 });
 
