@@ -214,6 +214,18 @@ app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), 
   });
 });
 
+app.get("/api/user_department/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('SELECT user.id, user.firstname, user.lastname, user.departmentid, department.name from user, department where user.departmentid=department.id and user.departmentid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid found
+      res.status(404).end();
+    }
+  });
+});
+
 /********************************************************************
     complex GET Requests
  *******************************************************************/
