@@ -550,25 +550,26 @@ app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret
     req.body = [req.body];
   }
 
-  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.projectid]);
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.projectid], () => {
+    for (var i = 0; i < req.body.length; i++) {
+      var el = req.body[i]
+      if (el.id == null) {
+        console.log("");
+        console.log("Bad POST Request to /api/project_users/");
+        console.log("Request Body:");
+        console.log(req.body);
+        console.log("Element (Index "+ i+"):");
+        console.log(el)
+        console.log("");
 
-  for (var i = 0; i < req.body.length; i++) {
-    var el = req.body[i]
-    if (el.id == null) {
-      console.log("");
-      console.log("Bad POST Request to /api/project_users/");
-      console.log("Request Body:");
-      console.log(req.body);
-      console.log("Element (Index "+ i+"):");
-      console.log(el)
-      console.log("");
+        res.status(400).end();
+      } else {
+        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
 
-      res.status(400).end();
-    } else {
-      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
+      }
+    };
+  });
 
-    }
-  };
 
   res.status(200).end();
 });
