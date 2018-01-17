@@ -310,8 +310,17 @@ app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
     res.status(400).end();
   } else {
-    db.run("INSERT into USER(firstname,lastname,departmentid) VALUES (?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid]);
-
+    db.run("INSERT into USER(firstname,lastname,departmentid) VALUES (?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid], () => {
+      db.all("SELECT id from USER where lastname=req.body.lastname and firstname=req.body.firstname and departmentid=req.body.departmentid", [req.params.userid], (err, result) =>{
+        if (result.length > 0) {
+          res.send(result);
+          res.status(200).end();
+        } else {
+          //no user with given userid found
+          res.status(404).end();
+        }
+      });
+    });
     res.status(200).end();
   }
 });
