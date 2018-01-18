@@ -98,7 +98,7 @@ app.get("/api/project", jwtMiddleware({secret: superSuperSecret}), (req,res) => 
 });
 
 app.get("/api/user", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select user.*, department.name from user, department where user.departmentid=department.id', [], (err, result) =>{
+  db.all('select u.*, d.name from user as u, (select null as name, null as id union all select d.name, d.id from department as d) as d where u.departmentid=d.id or (u.departmentid is null and d.id is null)', [], (err, result) =>{
     res.send(result);
 
     res.status(200).end();
@@ -318,7 +318,7 @@ app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) =
 });
 
 app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null  || req.body.admin == null) {
+  if (req.body.firstname == null ||  req.body.lastname == null ||  req.body.admin == null) {
     console.log("");
     console.log("Bad POST Request to /api/user/");
     console.log("Request Body:");
@@ -327,12 +327,21 @@ app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
     res.status(400).end();
   } else {
-    db.run("INSERT into USER(firstname,lastname,departmentid,admin) VALUES (?,?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.admin], () => {
-      db.get("SELECT max(id) as id from USER", [], (err, result) =>{
-        res.send(result);
-        res.status(200).end();
+    if (req.body.department == null) {
+      db.run("INSERT into USER(firstname,lastname,admin) VALUES (?,?,?)", [req.body.firstname, req.body.lastname, req.body.admin], () => {
+        db.get("SELECT max(id) as id from USER", [], (err, result) =>{
+          res.send(result);
+          res.status(200).end();
+        });
       });
-    });
+    } else {
+      db.run("INSERT into USER(firstname,lastname,departmentid,admin) VALUES (?,?,?,?)", [req.body.firstname, req.body.lastname, req.body.department, req.body.admin], () => {
+        db.get("SELECT max(id) as id from USER", [], (err, result) =>{
+          res.send(result);
+          res.status(200).end();
+        });
+      });
+    }
   }
 });
 
