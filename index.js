@@ -52,7 +52,8 @@ app.post("/api/token", (req,res) => {
           username: (result2.username)
         };
 
-        var token = jwt.sign(payload, superSuperSecret, {
+        var token = jwt.sign
+        (payload, superSuperSecret, {
           expiresIn: "30m"
         });
 
@@ -318,7 +319,7 @@ app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) =
 });
 
 app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
+  if (req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null  || req.body.admin == null) {
     console.log("");
     console.log("Bad POST Request to /api/user/");
     console.log("Request Body:");
@@ -327,7 +328,7 @@ app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
     res.status(400).end();
   } else {
-    db.run("INSERT into USER(firstname,lastname,departmentid) VALUES (?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid], () => {
+    db.run("INSERT into USER(firstname,lastname,departmentid,admin) VALUES (?,?,?,?)", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.admin], () => {
       db.get("SELECT max(id) as id from USER", [], (err, result) =>{
         res.send(result);
         res.status(200).end();
