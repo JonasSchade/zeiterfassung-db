@@ -513,17 +513,14 @@ app.put('/api/changepassword', jwtMiddleware({secret: superSuperSecret}), (req,r
 
     res.status(400).end();
   } else {
-    console.log(req.body);
       db.get("select * from logdata where username=? and password=?", [req.body.username, req.body.password_old], (err, result) => {
         if (result == null) {
           res.send({"success": false});
           res.status(404).end();
           return;
-        } else {
-          console.log(req.body);
-          db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password_new, req.body.userid]);
-          res.status(200).end();
-        }
+        };
+        db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password_new, req.body.userid]);
+        res.status(200).end();
       });
 }
 });
