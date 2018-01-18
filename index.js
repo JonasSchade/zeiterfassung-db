@@ -488,7 +488,7 @@ app.put('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,r
 });
 
 app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.userid == null ||req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
+  if (req.params.userid == null ||req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
     console.log("");
     console.log("Bad PUT Request to /api/logdata/");
     console.log("Request Body:");
@@ -497,10 +497,35 @@ app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,
 
     res.status(400).end();
   } else {
-    db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.params.password, req.param.userid]);
+    db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password, req.params.userid]);
 
     res.status(200).end();
   }
+});
+
+app.put('/api/changepassword', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.body.userid == null ||  req.body.username == null ||  req.body.password_new == null ||  req.body.password_old == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/changepassword/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    console.log(req.body);
+      db.get("select * from logdata where username=? and password=?", [req.body.username, req.body.password_old], (err, result) => {
+        if (result == null) {
+          res.send({"success": false});
+          res.status(404).end();
+          return;
+        } else {
+          console.log(req.body);
+          db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password_new, req.body.userid]);
+          res.status(200).end();
+        }
+      });
+}
 });
 
 app.put('/api/user_project/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
