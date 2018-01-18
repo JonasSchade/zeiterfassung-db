@@ -482,7 +482,7 @@ app.put('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res)
 });
 
 app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.id == null ||req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null) {
+  if (req.param.id == null || req.body.firstname == null ||  req.body.lastname == null || req.body.departmentid == null || req.body.admin == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user/");
     console.log("Request Body:");
@@ -491,7 +491,7 @@ app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) =>
 
     res.status(400).end();
   } else {
-    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.params.id]);
+    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=?, admin=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.admin, req.params.id]);
 
     res.status(200).end();
   }
