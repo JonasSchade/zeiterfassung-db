@@ -361,8 +361,8 @@ app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res
   }
 });
 
-app.post('/api/logdata/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
+app.post('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.body.username == null ||  req.body.password == null) {
     console.log("");
     console.log("Bad POST Request to /api/logdata/");
     console.log("Request Body:");
@@ -371,7 +371,7 @@ app.post('/api/logdata/', jwtMiddleware({secret: superSuperSecret}), (req,res) =
 
     res.status(400).end();
   } else {
-    db.run("INSERT into logdata(userid, username, password) VALUES (?,?,?)", [req.body.userid, req.body.username, req.body.password]);
+    db.run("INSERT into logdata(userid, username, password) VALUES (?,?,?)", [req.params.userid, req.body.username, req.body.password]);
 
     res.status(200).end();
   }
