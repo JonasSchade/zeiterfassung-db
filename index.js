@@ -404,6 +404,32 @@ app.post('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecre
   res.status(200).end();
 });
 
+app.post('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  for (var i = 0; i < req.body.length; i++) {
+    var el = req.body[i]
+    if (el.id == null) {
+      console.log("");
+      console.log("Bad POST Request to /api/user_projects/");
+      console.log("Request Body:");
+      console.log(req.body);
+      console.log("Element (Index "+ i+"):");
+      console.log(el)
+      console.log("");
+
+      res.status(400).end();
+    } else {
+      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
+    }
+  };
+
+  res.status(200).end();
+});
+
 app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null ||  req.body.userid == null) {
     console.log("");
