@@ -371,9 +371,12 @@ app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res
 
     res.status(400).end();
   } else {
-    db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager]);
-
-    res.status(200).end();
+    db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager], () => {
+      db.get("SELECT max(id) as id from DEPARTMENT", [], (err, result) =>{
+        res.send(result);
+        res.status(200).end();
+      });
+    });
   }
 });
 
