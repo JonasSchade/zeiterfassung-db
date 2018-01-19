@@ -702,6 +702,7 @@ app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res)
 
 app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM department WHERE id=?", [req.params.id]);
+  db.run("UPDATE user SET departmentid=? WHERE departmentid=?", [null, req.params.id]);
 
   res.status(200).end();
 });
