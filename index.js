@@ -190,6 +190,21 @@ app.get("/api/project_users/:projectid", jwtMiddleware({secret: superSuperSecret
     }
   });
 });
+
+/********************************************************************
+    GET All Projects of a certain Manager
+ *******************************************************************/
+app.get("/api/projects_of_manager/:managerid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select project.*, user.firstname, user.lastname from project, user where user.id=project.manager and project.manager=?', [req.params.managerid], (err, result) =>{
+  if(result.length > 0){
+    res.send(result);
+    res.status(200).end();
+  } else {
+    res.status(404).end();
+  }
+  });
+});
+
 /*Not single Entries*/
 app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
@@ -221,7 +236,7 @@ app.get("/api/user_department/:departmentid", jwtMiddleware({secret: superSuperS
       res.send(result);
       res.status(200).end();
     } else {
-      //no projecttimes with given userid found
+      //no users with given departmentid found
       res.status(404).end();
     }
   });
