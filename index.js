@@ -694,6 +694,7 @@ app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret
  *******************************************************************/
 app.delete('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM project WHERE id=?", [req.params.id]);
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.id]);
   res.status(200).end();
 });
 
