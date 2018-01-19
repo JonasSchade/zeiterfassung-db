@@ -231,7 +231,7 @@ app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), 
 });
 
 //gets all users for specific department
-app.get("/api/user_department/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('SELECT * from user where user.departmentid=?', [req.params.departmentid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
