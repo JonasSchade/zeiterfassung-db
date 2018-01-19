@@ -230,8 +230,9 @@ app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), 
   });
 });
 
+//gets all users for specific department
 app.get("/api/user_department/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('SELECT user.id, user.firstname, user.lastname, user.departmentid, department.name from user, department where user.departmentid=department.id and user.departmentid=?', [req.params.departmentid], (err, result) =>{
+  db.all('SELECT * from user where user.departmentid=?', [req.params.departmentid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
       res.status(200).end();
@@ -474,6 +475,32 @@ app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}),
   res.status(200).end();
 });
 
+//this will add users to a specific project but will also every other user from the given project
+app.put('/api/department_users/:departmentid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  db.run("UPDATE user SET departmentid=? WHERE departmentid=?", [null, req.params.departmentid], () => {
+    for(var i = 0; i<req.body.length; i++){
+      if (req.params.departmentid == null || req.body[i].id == null) {
+        console.log("");
+        console.log("Bad PUT Request to /api/department_users/");
+        console.log("Request Body:");
+        console.log(req.body);
+        console.log("");
+
+        res.status(400).end();
+      } else {
+
+        db.run("UPDATE user SET departmentid=? WHERE id=?", [req.params.departmentid, req.body[i].id]);
+        res.status(200).end();
+      }
+    }
+  });
+});
+
 app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null ||  req.body.userid == null) {
     console.log("");
@@ -542,7 +569,7 @@ app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) =>
 });
 
 app.put('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.id == null ||req.body.name == null ||  req.body.manager == null) {
+  if (req.params.id == null ||req.body.name == null ||  req.body.manager == null) {
     console.log("");
     console.log("Bad PUT Request to /api/department/");
     console.log("Request Body:");
