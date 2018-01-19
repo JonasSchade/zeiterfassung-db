@@ -128,7 +128,7 @@ app.get("/api/project/:id", jwtMiddleware({secret: superSuperSecret}), (req,res)
 });
 
 app.get("/api/user/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all("select u.*, d.name from user as u, (select 'Keine Abteilung' as name, null as id union all select d.name, d.id from department as d) as d where u.id=? and (u.departmentid=d.id or (u.departmentid is null and d.id is null))", [req.params.id], (err, result) =>{
+  db.all("select l.username as username, us.* FROM logdata as l, (select u.*, d.name from user as u, (select 'Keine Abteilung' as name, null as id union all select d.name, d.id from department as d) as d where u.id=? and (u.departmentid=d.id or (u.departmentid is null and d.id is null))) as us WHERE l.userid = us.id", [req.params.id], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
