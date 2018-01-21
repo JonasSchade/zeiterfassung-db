@@ -231,7 +231,7 @@ app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), 
 });
 
 //gets all users for specific department
-app.get("/api/user_department/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('SELECT * from user where user.departmentid=?', [req.params.departmentid], (err, result) =>{
     if (result.length > 0) {
       res.send(result);
@@ -371,9 +371,12 @@ app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res
 
     res.status(400).end();
   } else {
-    db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager]);
-
-    res.status(200).end();
+    db.run("INSERT into DEPARTMENT(name,manager) VALUES (?,?)", [req.body.name,req.body.manager], () => {
+      db.get("SELECT max(id) as id from DEPARTMENT", [], (err, result) =>{
+        res.send(result);
+        res.status(200).end();
+      });
+    });
   }
 });
 
@@ -453,26 +456,26 @@ app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}),
     req.body = [req.body];
   }
 
-  db.run("DELETE FROM user_project WHERE userid=?", [parseInt(req.params.userid)]);
+  db.run("DELETE FROM user_project WHERE userid=?", [parseInt(req.params.userid)], () => {
+    for (var i = 0; i < req.body.length; i++) {
+      var el = req.body[i]
+      if (el.id == null) {
+        console.log("");
+        console.log("Bad POST Request to /api/user_projects/");
+        console.log("Request Body:");
+        console.log(req.body);
+        console.log("Element (Index "+ i+"):");
+        console.log(el)
+        console.log("");
 
-  for (var i = 0; i < req.body.length; i++) {
-    var el = req.body[i]
-    if (el.id == null) {
-      console.log("");
-      console.log("Bad POST Request to /api/user_projects/");
-      console.log("Request Body:");
-      console.log(req.body);
-      console.log("Element (Index "+ i+"):");
-      console.log(el)
-      console.log("");
+        res.status(400).end();
+      } else {
+        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
+      }
+    };
 
-      res.status(400).end();
-    } else {
-      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
-    }
-  };
-
-  res.status(200).end();
+    res.status(200).end();
+  });
 });
 
 //this will add users to a specific project but will also every other user from the given project
@@ -691,6 +694,7 @@ app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret
  *******************************************************************/
 app.delete('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM project WHERE id=?", [req.params.id]);
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.id]);
   res.status(200).end();
 });
 
@@ -702,6 +706,7 @@ app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res)
 
 app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM department WHERE id=?", [req.params.id]);
+  db.run("UPDATE user SET departmentid=? WHERE departmentid=?", [null, req.params.id]);
 
   res.status(200).end();
 });
