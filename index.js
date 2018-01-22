@@ -17,13 +17,14 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
   console.log('Connected to the Chronos database.');
 });
 
-//add 'Access-Control-Allow-Origin'-ResponseHeader to every every request
 app.use('/*',function(req,res,next){
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE, PATCH')
     next();
 });
+
+
 
 app.post("/api/token", (req,res) => {
   if (req.body.username == null ||  req.body.pw == null) {
@@ -84,19 +85,33 @@ app.get("/api/authenticate", (req,res) => {
   res.status(200).end();
 });
 
+app.put('/api/changepassword', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.body.userid == null ||  req.body.username == null ||  req.body.password_new == null ||  req.body.password_old == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/changepassword/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
 
-
-/********************************************************************
-    GET All Entries
- *******************************************************************/
-app.get("/api/project", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select project.*, user.firstname, user.lastname from project, user where project.manager=user.id', [], (err, result) =>{
-    res.send(result);
-
-    res.status(200).end();
-  });
+    res.status(400).end();
+  } else {
+    db.get("select * from logdata where username=? and password=?", [req.body.username, req.body.password_old], (err, result) => {
+      if (result == null) {
+        res.send({"success": false});
+        res.status(404).end();
+        return;
+      };
+      db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password_new, req.body.userid]);
+      res.status(200).end();
+    });
+  }
 });
 
+
+/********************************************************************************************
+  api/user
+ *******************************************************************************************/
+//returns all users
 app.get("/api/user", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all("select l.username as username, us.* from logdata as l, (select u.*, d.name from user as u, (select 'Keine Abteilung' as name, null as id union all select d.name, d.id from department as d) as d where u.departmentid=d.id or (u.departmentid is null and d.id is null)) as us WHERE l.userid = us.id", [], (err, result) =>{
     res.send(result);
@@ -105,28 +120,7 @@ app.get("/api/user", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   });
 });
 
-app.get("/api/department", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select department.*, user.firstname, user.lastname from department, user where department.manager=user.id', [], (err, result) =>{
-    res.send(result);
-
-    res.status(200).end();
-  });
-});
-/********************************************************************
-    GET Single Entry
- *******************************************************************/
-app.get("/api/project/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select project.*, user.firstname, user.lastname from project, user where project.ID=? and project.manager=user.id', [req.params.id], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result[0]);
-      res.status(200).end();
-    } else {
-      //no project with given id found
-      res.status(404).end();
-    }
-  });
-});
-
+//returns single user (by id)
 app.get("/api/user/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all("select l.username as username, us.* FROM logdata as l, (select u.*, d.name from user as u, (select 'Keine Abteilung' as name, null as id union all select d.name, d.id from department as d) as d where u.id=? and (u.departmentid=d.id or (u.departmentid is null and d.id is null))) as us WHERE l.userid = us.id", [req.params.id], (err, result) =>{
     if (result.length > 0) {
@@ -139,200 +133,7 @@ app.get("/api/user/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) =>
   });
 });
 
-app.get("/api/department/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select department.*, user.firstname, user.lastname from department, user where department.id=? and department.manager=user.id', [req.params.id], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result[0]);
-      res.status(200).end();
-    } else {
-      //no department with given id found
-      res.status(404).end();
-    }
-  });
-});
-
-app.get("/api/logdata/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select * from logdata where userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result[0]);
-      res.status(200).end();
-    } else {
-      //no logdata with given userid found
-      res.status(404).end();
-    }
-  });
-});
-/********************************************************************
-    GET Multiple Entries by parameter
- *******************************************************************/
-app.get("/api/user_project/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no project with given userid found
-      res.send([]);
-      res.status(200).end();
-    }
-  });
-});
-/*Not single Entries*/
-app.get("/api/project_users/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select USER.* from USER LEFT JOIN user_project ON USER.ID = user_project.userid WHERE user_project.projectid=?', [req.params.projectid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no user with given id found
-      res.send([]);
-      res.status(200).end();
-    }
-  });
-});
-
-/********************************************************************
-    GET All Projects of a certain Manager
- *******************************************************************/
-app.get("/api/projects_of_manager/:managerid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select project.*, user.firstname, user.lastname from project, user where user.id=project.manager and project.manager=?', [req.params.managerid], (err, result) =>{
-  if(result.length > 0){
-    res.send(result);
-    res.status(200).end();
-  } else {
-    res.status(404).end();
-  }
-  });
-});
-
-/*Not single Entries*/
-app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no times with given userid found
-      res.status(404).end();
-    }
-  });
-});
-
-app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select * from project_time where userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no projecttimes with given userid found
-      res.status(404).end();
-    }
-  });
-});
-
-//gets all users for specific department
-app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('SELECT * from user where user.departmentid=?', [req.params.departmentid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no users with given departmentid found
-      res.status(404).end();
-    }
-  });
-});
-
-/********************************************************************
-    complex GET Requests
- *******************************************************************/
- //get time worked on one project on a date by userid
- app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-   db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
-     if (result.length > 0) {
-       res.send(result);
-       res.status(200).end();
-     } else {
-       //no projecttimes with given userid, date and projectid found
-       res.status(404).end();
-     }
-   });
- });
-
- //get sum of worked hours for a project
- app.get("/api/time_by_project/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-   db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
-     if (result.length > 0) {
-       res.send(result);
-       res.status(200).end();
-     } else {
-       //no projecttimes with given userid, date and projectid found
-       res.status(404).end();
-     }
-   });
- });
-
-//get sum by user for one project
- app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-   db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
-     if (result.length > 0) {
-       res.send(result);
-       res.status(200).end();
-     } else {
-       //no projecttimes with given userid, date and projectid found
-       res.status(404).end();
-     }
-   });
- });
-
-//get sum on a day by the userid
- app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-   db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
-     if (result.length > 0) {
-       res.send(result);
-       res.status(200).end();
-     } else {
-       //no projecttimes with given userid, date and projectid found
-       res.status(404).end();
-     }
-   });
- });
-
- //get sum of worked hours of userid
-  app.get("/api/time_by_date_project/:projectid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-    db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.date=?', [req.params.projectid, req.params.date], (err, result) =>{
-      if (result.length > 0) {
-        res.send(result);
-        res.status(200).end();
-      } else {
-        //no projecttimes with given userid, date and projectid found
-        res.status(404).end();
-      }
-    });
-  });
-
-/********************************************************************
-    POST Requests
- *******************************************************************/
-app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
-    console.log("");
-    console.log("Bad POST Request to /api/project/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("INSERT into PROJECT(name,manager,description) VALUES (?,?,?)", [req.body.name, req.body.manager, req.body.description], () => {
-      db.get("SELECT max(id) as id FROM PROJECT", [], (err,result) => {
-        res.send(result);
-        res.status(200).end();
-      });
-    });
-  }
-});
-
+//posts single user
 app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.firstname == null ||  req.body.lastname == null ||  req.body.admin == null) {
     console.log("");
@@ -361,6 +162,125 @@ app.post('/api/user/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   }
 });
 
+//updates given user
+app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.params.id == null || req.body.firstname == null ||  req.body.lastname == null || req.body.admin == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/user/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=?, admin=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.admin, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+//deletes given user
+app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
+
+  res.status(200).end();
+});
+
+/********************************************************************************************
+  api/project
+ *******************************************************************************************/
+//returns all projects
+app.get("/api/project", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select project.*, user.firstname, user.lastname from project, user where project.manager=user.id', [], (err, result) =>{
+    res.send(result);
+
+    res.status(200).end();
+  });
+});
+
+//returns single project (by id)
+app.get("/api/project/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select project.*, user.firstname, user.lastname from project, user where project.ID=? and project.manager=user.id', [req.params.id], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no project with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+//posts single project
+app.post('/api/project/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("INSERT into PROJECT(name,manager,description) VALUES (?,?,?)", [req.body.name, req.body.manager, req.body.description], () => {
+      db.get("SELECT max(id) as id FROM PROJECT", [], (err,result) => {
+        res.send(result);
+        res.status(200).end();
+      });
+    });
+  }
+});
+
+//updates given project
+app.put('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.params.id == null || req.body.name == null ||  req.body.manager == null || req.body.description == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/project/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+//deletes given project
+app.delete('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.run("DELETE FROM project WHERE id=?", [req.params.id]);
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.id]);
+  res.status(200).end();
+});
+
+/********************************************************************************************
+  api/department
+ *******************************************************************************************/
+//returns all departments
+app.get("/api/department", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+ db.all('select department.*, user.firstname, user.lastname from department, user where department.manager=user.id', [], (err, result) =>{
+   res.send(result);
+
+   res.status(200).end();
+ });
+});
+
+//returns single department (by id)
+app.get("/api/department/:id", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select department.*, user.firstname, user.lastname from department, user where department.id=? and department.manager=user.id', [req.params.id], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no department with given id found
+      res.status(404).end();
+    }
+  });
+});
+
+//posts single department
 app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.name == null ||  req.body.manager == null) {
     console.log("");
@@ -380,6 +300,189 @@ app.post('/api/department/', jwtMiddleware({secret: superSuperSecret}), (req,res
   }
 });
 
+//updates given department
+app.put('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  if (req.params.id == null ||req.body.name == null ||  req.body.manager == null) {
+    console.log("");
+    console.log("Bad PUT Request to /api/department/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+  } else {
+    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.params.id]);
+
+    res.status(200).end();
+  }
+});
+
+//deletes given department
+app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.run("DELETE FROM department WHERE id=?", [req.params.id]);
+  db.run("UPDATE user SET departmentid=? WHERE departmentid=?", [null, req.params.id]);
+
+  res.status(200).end();
+});
+
+
+/********************************************************************************************
+  other enpoints
+ *******************************************************************************************/
+
+//retuns all projects of given user
+app.get("/api/user_projects/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no project with given userid found
+      res.send([]);
+      res.status(200).end();
+    }
+  });
+});
+
+//returns all users of given project
+app.get("/api/project_users/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select USER.* from USER LEFT JOIN user_project ON USER.ID = user_project.userid WHERE user_project.projectid=?', [req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no user with given id found
+      res.send([]);
+      res.status(200).end();
+    }
+  });
+});
+
+//returns all projects where given user is manager
+app.get("/api/projects_of_manager/:managerid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select project.*, user.firstname, user.lastname from project, user where user.id=project.manager and project.manager=?', [req.params.managerid], (err, result) =>{
+  if(result.length > 0){
+    res.send(result);
+    res.status(200).end();
+  } else {
+    res.status(404).end();
+  }
+  });
+});
+
+//NOT USED?
+/*Not single Entries*/
+app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select * from time where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no times with given userid found
+      res.status(404).end();
+    }
+  });
+});
+
+//NOT USED?
+app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select * from project_time where userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid found
+      res.status(404).end();
+    }
+  });
+});
+
+//returns all users frim given department
+app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('SELECT * from user where user.departmentid=?', [req.params.departmentid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no users with given departmentid found
+      res.status(404).end();
+    }
+  });
+});
+
+//NOT USED?
+//get time worked on one project on a date by userid
+app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+ db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+   if (result.length > 0) {
+     res.send(result);
+     res.status(200).end();
+   } else {
+     //no projecttimes with given userid, date and projectid found
+     res.status(404).end();
+   }
+ });
+});
+
+//NOT USED?
+//get sum of worked hours for a project
+app.get("/api/time_by_project/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+ db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
+   if (result.length > 0) {
+     res.send(result);
+     res.status(200).end();
+   } else {
+     //no projecttimes with given userid, date and projectid found
+     res.status(404).end();
+   }
+ });
+});
+
+//NOT USED?
+//get sum by user for one project
+app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+ db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
+   if (result.length > 0) {
+     res.send(result);
+     res.status(200).end();
+   } else {
+     //no projecttimes with given userid, date and projectid found
+     res.status(404).end();
+   }
+ });
+});
+
+//NOT USED?
+//get sum on a day by the userid
+app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+ db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
+   if (result.length > 0) {
+     res.send(result);
+     res.status(200).end();
+   } else {
+     //no projecttimes with given userid, date and projectid found
+     res.status(404).end();
+   }
+ });
+});
+
+//NOT USED?
+//get sum of worked hours of userid
+app.get("/api/time_by_date_project/:projectid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.date=?', [req.params.projectid, req.params.date], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.status(404).end();
+    }
+  });
+});
+
+
+
+//posts logdata fpr given user
 app.post('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.username == null ||  req.body.password == null) {
     console.log("");
@@ -396,6 +499,7 @@ app.post('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req
   }
 });
 
+//links all given users to given project id
 app.post('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
   if (! (req.body instanceof Array)) {
@@ -423,6 +527,7 @@ app.post('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecre
   res.status(200).end();
 });
 
+//links all given prjects to given user id
 app.post('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
   if (! (req.body instanceof Array)) {
@@ -449,7 +554,7 @@ app.post('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret})
   res.status(200).end();
 });
 
-
+//links all given projects to given user id but deletes all other links to the user
 app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
   if (! (req.body instanceof Array)) {
@@ -478,7 +583,7 @@ app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}),
   });
 });
 
-//this will add users to a specific project but will also every other user from the given project
+//links all given users to given department id but deletes all links other links to the department
 app.put('/api/department_users/:departmentid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
   if (! (req.body instanceof Array)) {
@@ -504,6 +609,7 @@ app.put('/api/department_users/:departmentid', jwtMiddleware({secret: superSuper
   });
 });
 
+//NOT USED?
 app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null ||  req.body.userid == null) {
     console.log("");
@@ -520,6 +626,7 @@ app.post('/api/time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   }
 });
 
+//NOT USED?
 app.post('/api/project_time/', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.body.date == null ||  req.body.userid == null ||  req.body.projectid == null ||  req.body.duration == null) {
     console.log("");
@@ -536,57 +643,9 @@ app.post('/api/project_time/', jwtMiddleware({secret: superSuperSecret}), (req,r
   }
 });
 
-/********************************************************************
-    PUT Requests
- *******************************************************************/
-app.put('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.params.id == null || req.body.name == null ||  req.body.manager == null || req.body.description == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/project/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
 
-    res.status(400).end();
-  } else {
-    db.run("UPDATE project SET name=?, manager=?, description=? WHERE id=?", [req.body.name, req.body.manager, req.body.description, req.params.id]);
 
-    res.status(200).end();
-  }
-});
-
-app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.params.id == null || req.body.firstname == null ||  req.body.lastname == null || req.body.admin == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/user/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("UPDATE user SET firstname=?, lastname=?, departmentid=?, admin=? WHERE id=?", [req.body.firstname, req.body.lastname, req.body.departmentid, req.body.admin, req.params.id]);
-
-    res.status(200).end();
-  }
-});
-
-app.put('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.params.id == null ||req.body.name == null ||  req.body.manager == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/department/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-    db.run("UPDATE department SET name=?,manager=? WHERE id=?", [req.body.name,req.body.manager, req.params.id]);
-
-    res.status(200).end();
-  }
-});
-
+//NOT USED?
 app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.params.userid == null ||req.body.userid == null ||  req.body.username == null ||  req.body.password == null) {
     console.log("");
@@ -603,28 +662,7 @@ app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,
   }
 });
 
-app.put('/api/changepassword', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.body.userid == null ||  req.body.username == null ||  req.body.password_new == null ||  req.body.password_old == null) {
-    console.log("");
-    console.log("Bad PUT Request to /api/changepassword/");
-    console.log("Request Body:");
-    console.log(req.body);
-    console.log("");
-
-    res.status(400).end();
-  } else {
-      db.get("select * from logdata where username=? and password=?", [req.body.username, req.body.password_old], (err, result) => {
-        if (result == null) {
-          res.send({"success": false});
-          res.status(404).end();
-          return;
-        };
-        db.run("UPDATE logdata SET username=?,password=?  WHERE userid=?", [req.body.username, req.body.password_new, req.body.userid]);
-        res.status(200).end();
-      });
-}
-});
-
+//NOT USED?
 app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null || req.param.date == null || req.body.name == null ||  req.body.manager == null) {
     console.log("");
@@ -641,6 +679,7 @@ app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (r
   }
 });
 
+//NOT USED?
 app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   if (req.param.userid == null || req.param.date == null || req.param.projectid == null || req.body.name == null ||  req.body.manager == null) {
     console.log("");
@@ -689,42 +728,9 @@ app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret
   res.status(200).end();
 });
 
-/********************************************************************
-    DELETE Requests
- *******************************************************************/
-app.delete('/api/project/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM project WHERE id=?", [req.params.id]);
-  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.id]);
-  res.status(200).end();
-});
-
-app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
-
-  res.status(200).end();
-});
-
-app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM department WHERE id=?", [req.params.id]);
-  db.run("UPDATE user SET departmentid=? WHERE departmentid=?", [null, req.params.id]);
-
-  res.status(200).end();
-});
-
+//NOT USED?
 app.delete('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.run("DELETE FROM logdata WHERE userid=?", [req.params.userid]);
-
-  res.status(200).end();
-});
-
-app.delete('/api/user_project/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM user_project WHERE userid=?", [req.params.userid]);
-
-  res.status(200).end();
-});
-
-app.delete('/api/user_role/:userid/:roleid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM user_role WHERE userid=? and roleid=?", [req.params.userid, req.params.roleid]);
 
   res.status(200).end();
 });
