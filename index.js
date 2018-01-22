@@ -327,20 +327,18 @@ app.delete('/api/department/:id', jwtMiddleware({secret: superSuperSecret}), (re
 
 
 /********************************************************************************************
-  other enpoints
+  user - project relations
  *******************************************************************************************/
 
-//retuns all projects of given user
-app.get("/api/user_projects/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
-    if (result.length > 0) {
-      res.send(result);
-      res.status(200).end();
-    } else {
-      //no project with given userid found
-      res.send([]);
-      res.status(200).end();
-    }
+ //returns all projects where given user is manager
+ app.get("/api/projects_of_manager/:managerid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select project.*, user.firstname, user.lastname from project, user where user.id=project.manager and project.manager=?', [req.params.managerid], (err, result) =>{
+  if(result.length > 0){
+    res.send(result);
+    res.status(200).end();
+  } else {
+    res.status(404).end();
+  }
   });
 });
 
@@ -358,18 +356,139 @@ app.get("/api/project_users/:projectid", jwtMiddleware({secret: superSuperSecret
   });
 });
 
-//returns all projects where given user is manager
-app.get("/api/projects_of_manager/:managerid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select project.*, user.firstname, user.lastname from project, user where user.id=project.manager and project.manager=?', [req.params.managerid], (err, result) =>{
-  if(result.length > 0){
-    res.send(result);
-    res.status(200).end();
-  } else {
-    res.status(404).end();
+//links all given users to given project id
+app.post('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
   }
+
+  for (var i = 0; i < req.body.length; i++) {
+    var el = req.body[i]
+    if (el.id == null) {
+      console.log("");
+      console.log("Bad POST Request to /api/project_users/");
+      console.log("Request Body:");
+      console.log(req.body);
+      console.log("Element (Index "+ i+"):");
+      console.log(el)
+      console.log("");
+
+      res.status(400).end();
+    } else {
+      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
+
+    }
+  };
+
+  res.status(200).end();
+});
+
+//this will add users to a specific project but will also every other user from the given project
+app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.projectid], () => {
+    for (var i = 0; i < req.body.length; i++) {
+      var el = req.body[i]
+      if (el.id == null) {
+        console.log("");
+        console.log("Bad POST Request to /api/project_users/");
+        console.log("Request Body:");
+        console.log(req.body);
+        console.log("Element (Index "+ i+"):");
+        console.log(el)
+        console.log("");
+
+        res.status(400).end();
+      } else {
+        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
+
+      }
+    };
+  });
+
+
+  res.status(200).end();
+});
+
+//retuns all projects of given user
+app.get("/api/user_projects/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select PROJECT.* from PROJECT LEFT JOIN user_project ON PROJECT.ID = user_project.projectid WHERE user_project.userid=?', [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no project with given userid found
+      res.send([]);
+      res.status(200).end();
+    }
   });
 });
 
+//links all given prjects to given user id
+app.post('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  for (var i = 0; i < req.body.length; i++) {
+    var el = req.body[i]
+    if (el.id == null) {
+      console.log("");
+      console.log("Bad POST Request to /api/user_projects/");
+      console.log("Request Body:");
+      console.log(req.body);
+      console.log("Element (Index "+ i+"):");
+      console.log(el)
+      console.log("");
+
+      res.status(400).end();
+    } else {
+      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
+    }
+  };
+
+  res.status(200).end();
+});
+
+//links all given projects to given user id but deletes all other links to the user
+app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (! (req.body instanceof Array)) {
+    req.body = [req.body];
+  }
+
+  db.run("DELETE FROM user_project WHERE userid=?", [parseInt(req.params.userid)], () => {
+    for (var i = 0; i < req.body.length; i++) {
+      var el = req.body[i]
+      if (el.id == null) {
+        console.log("");
+        console.log("Bad POST Request to /api/user_projects/");
+        console.log("Request Body:");
+        console.log(req.body);
+        console.log("Element (Index "+ i+"):");
+        console.log(el)
+        console.log("");
+
+        res.status(400).end();
+      } else {
+        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
+      }
+    };
+
+    res.status(200).end();
+  });
+});
+
+
+/********************************************************************************************
+  other enpoints
+ *******************************************************************************************/
 //NOT USED?
 /*Not single Entries*/
 app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
@@ -499,90 +618,6 @@ app.post('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req
   }
 });
 
-//links all given users to given project id
-app.post('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-
-  if (! (req.body instanceof Array)) {
-    req.body = [req.body];
-  }
-
-  for (var i = 0; i < req.body.length; i++) {
-    var el = req.body[i]
-    if (el.id == null) {
-      console.log("");
-      console.log("Bad POST Request to /api/project_users/");
-      console.log("Request Body:");
-      console.log(req.body);
-      console.log("Element (Index "+ i+"):");
-      console.log(el)
-      console.log("");
-
-      res.status(400).end();
-    } else {
-      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
-
-    }
-  };
-
-  res.status(200).end();
-});
-
-//links all given prjects to given user id
-app.post('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-
-  if (! (req.body instanceof Array)) {
-    req.body = [req.body];
-  }
-
-  for (var i = 0; i < req.body.length; i++) {
-    var el = req.body[i]
-    if (el.id == null) {
-      console.log("");
-      console.log("Bad POST Request to /api/user_projects/");
-      console.log("Request Body:");
-      console.log(req.body);
-      console.log("Element (Index "+ i+"):");
-      console.log(el)
-      console.log("");
-
-      res.status(400).end();
-    } else {
-      db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
-    }
-  };
-
-  res.status(200).end();
-});
-
-//links all given projects to given user id but deletes all other links to the user
-app.put('/api/user_projects/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-
-  if (! (req.body instanceof Array)) {
-    req.body = [req.body];
-  }
-
-  db.run("DELETE FROM user_project WHERE userid=?", [parseInt(req.params.userid)], () => {
-    for (var i = 0; i < req.body.length; i++) {
-      var el = req.body[i]
-      if (el.id == null) {
-        console.log("");
-        console.log("Bad POST Request to /api/user_projects/");
-        console.log("Request Body:");
-        console.log(req.body);
-        console.log("Element (Index "+ i+"):");
-        console.log(el)
-        console.log("");
-
-        res.status(400).end();
-      } else {
-        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [parseInt(req.params.userid), el.id]);
-      }
-    };
-
-    res.status(200).end();
-  });
-});
-
 //links all given users to given department id but deletes all links other links to the department
 app.put('/api/department_users/:departmentid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
 
@@ -694,38 +729,6 @@ app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: sup
 
     res.status(200).end();
   }
-});
-
-
-//this will add users to a specific project but will also every other user from the given project
-app.put('/api/project_users/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-
-  if (! (req.body instanceof Array)) {
-    req.body = [req.body];
-  }
-
-  db.run("DELETE FROM user_project WHERE projectid=?", [req.params.projectid], () => {
-    for (var i = 0; i < req.body.length; i++) {
-      var el = req.body[i]
-      if (el.id == null) {
-        console.log("");
-        console.log("Bad POST Request to /api/project_users/");
-        console.log("Request Body:");
-        console.log(req.body);
-        console.log("Element (Index "+ i+"):");
-        console.log(el)
-        console.log("");
-
-        res.status(400).end();
-      } else {
-        db.run("INSERT into user_project(userid, projectid) VALUES (?,?)", [el.id, req.params.projectid]);
-
-      }
-    };
-  });
-
-
-  res.status(200).end();
 });
 
 //NOT USED?
