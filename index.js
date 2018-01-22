@@ -17,7 +17,7 @@ let db = new sqlite3.Database('./db/zeiterfassung.db', sqlite3.OPEN_READWRITE, (
   console.log('Connected to the Chronos database.');
 });
 
-app.use('/*',function(req,res,next){
+app.use('/*',(req,res,next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE, PATCH')
@@ -181,9 +181,10 @@ app.put('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) =>
 
 //deletes given user
 app.delete('/api/user/:id', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM user WHERE id=?", [req.params.id]);
-
-  res.status(200).end();
+  db.run("DELETE FROM logdata WHERE userid=?", [req.params.id], () => {
+    db.run("DELETE FROM user WHERE id=?", [req.params.id]);
+    res.status(200).end();
+  });
 });
 
 /********************************************************************************************
@@ -511,7 +512,8 @@ app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), 
       res.status(200).end();
     } else {
       //no projecttimes with given userid found
-      res.status(404).end();
+        res.send(0);
+        res.status(200).end();
     }
   });
 });
@@ -532,57 +534,58 @@ app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuper
 //NOT USED?
 //get time worked on one project on a date by userid
 app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
- db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
-   if (result.length > 0) {
-     res.send(result);
-     res.status(200).end();
-   } else {
-     //no projecttimes with given userid, date and projectid found
-     res.status(404).end();
-   }
- });
+  db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.send(0);
+      res.status(200).end();
+    }
+  });
 });
 
 //NOT USED?
 //get sum of worked hours for a project
 app.get("/api/time_by_project/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
- db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
-   if (result.length > 0) {
-     res.send(result);
-     res.status(200).end();
-   } else {
-     //no projecttimes with given userid, date and projectid found
-     res.status(404).end();
-   }
- });
+  db.all('select sum(duration) from project_time where project_time.projectid=?', [req.params.projectid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.status(404).end();
+    }
+  });
 });
 
 //NOT USED?
 //get sum by user for one project
 app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
- db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
-   if (result.length > 0) {
-     res.send(result);
-     res.status(200).end();
-   } else {
-     //no projecttimes with given userid, date and projectid found
-     res.status(404).end();
-   }
- });
+  db.all('select sum(duration) from project_time where project_time.projectid=? and project_time.userid=? ', [req.params.projectid, req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.status(404).end();
+    }
+  });
 });
 
 //NOT USED?
 //get sum on a day by the userid
 app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
- db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
-   if (result.length > 0) {
-     res.send(result);
-     res.status(200).end();
-   } else {
-     //no projecttimes with given userid, date and projectid found
-     res.status(404).end();
-   }
- });
+  db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.status(404).end();
+    }
+  });
 });
 
 //NOT USED?
@@ -731,11 +734,4 @@ app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: sup
   }
 });
 
-//NOT USED?
-app.delete('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.run("DELETE FROM logdata WHERE userid=?", [req.params.userid]);
-
-  res.status(200).end();
-});
-
-app.listen(3000, function (){console.log("Port:3000")});
+app.listen(3000, () => {console.log("Port:3000")});
