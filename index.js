@@ -531,7 +531,7 @@ app.get("/api/department_users/:departmentid", jwtMiddleware({secret: superSuper
   });
 });
 
-//NOT USED?
+
 //get time worked on one project on a date by userid
 app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select project_time.date, project_time.duration, project_time.userid, project.name  from project_time, project where project_time.userid=? and project_time.date=? and project_time.projectid=? and project_time.projectid=project.id', [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
@@ -540,7 +540,7 @@ app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: sup
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
-      res.send(0);
+      res.send([{duration: 0}]);
       res.status(200).end();
     }
   });
