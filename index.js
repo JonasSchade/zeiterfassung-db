@@ -540,7 +540,7 @@ app.get("/api/project_time/:userid/:date/:projectid", jwtMiddleware({secret: sup
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
-      res.send([{duration: 0}]);
+      res.send([{duration: 0.0}]);
       res.status(200).end();
     }
   });
