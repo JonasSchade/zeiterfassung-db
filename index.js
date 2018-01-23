@@ -504,6 +504,19 @@ app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res
   });
 });
 
+app.get("/api/times/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  db.all('select * from time where userid=? and date=?', [req.params.userid, req.params.date], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result);
+      res.status(200).end();
+    } else {
+      //no times with given userid found
+      res.send(null);
+      //res.status(404).end();
+    }
+  });
+});
+
 //NOT USED?
 app.get("/api/project_time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from project_time where userid=?', [req.params.userid], (err, result) =>{
