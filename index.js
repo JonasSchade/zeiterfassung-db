@@ -577,9 +577,10 @@ app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: s
 //NOT USED?
 //get sum on a day by the userid
 app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  db.all('select sum(duration) from project_time where project_time.userid=? and project_time.date=?', [req.params.userid, req.params.date], (err, result) =>{
+  db.all('SELECT time.*, d.sum from time join (select sum(duration) as sum, userid, date from project_time where userid=? and date=?) as d on d.userid=time.userid and d.date=time.date', [req.params.userid, req.params.date], (err, result) =>{
+  // db.all('select time.*, sum(duration) from time, project_time where project_time.userid=? and project_time.date=? and time.useid=? and time.date=?', [req.params.userid, req.params.date,req.params.userid, req.params.date], (err, result) =>{
     if (result.length > 0) {
-      res.send(result);
+      res.send(result[0]);
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
