@@ -584,7 +584,8 @@ app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSupe
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
-      res.status(404).end();
+      res.send({sum: 0.0});
+      res.status(200).end();
     }
   });
 });
