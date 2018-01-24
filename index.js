@@ -636,7 +636,6 @@ app.get("/api/time_worked_day/:userid/:date", jwtMiddleware({secret: superSuperS
   }
 
   db.all('SELECT * from time where userid=? and date=?', [req.params.userid, req.params.date], (err, result) =>{
-    console.log(result);
     if (result.length > 0) {
       var come = moment(result[0].comming_time);
       var leave = moment(result[0].leaving_time);
@@ -651,21 +650,22 @@ app.get("/api/time_worked_day/:userid/:date", jwtMiddleware({secret: superSuperS
 
       var format = "";
 
-      if (dur.hours() > 0) {
-        format = format + dur.hours() + "h";
+      if (dur.hours() < 10) {
+        format = format + "0"
+      };
+      format = format + dur.hours() + ":";
+
+      if (dur.minutes() < 10) {
+        format = format + "0"
       };
 
-      if (dur.minutes() > 0) {
-        if (format != "") {
-          format = format + " ";
-        }
-        format = format + dur.minutes() + "min";
-      };
-      res.send({"sum": dur.asMilliseconds(), "sumFormatted": format});
+      format = format + dur.minutes();
+
+      res.send({"sum": dur.asMilliseconds(), "sumFormatted": format, "hours": dur.asHours()});
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
-      res.send({sum: 0, sumFormatted: format});
+      res.send({sum: 0, sumFormatted: "00:00", hours: 0});
       res.status(200).end();
     }
   });
