@@ -504,6 +504,24 @@ app.get("/api/time/:userid", jwtMiddleware({secret: superSuperSecret}), (req,res
   });
 });
 
+app.get("/api/time_of_year/:userid/:year", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+  var year = parseInt(req.params.year);
+  if(isNaN(year)) {
+    res.status(404).end();
+    return;
+  }
+  var query = "select sum(duration) as sum from project_time where userid=? and date like '"+year+"%'";
+  db.all(query, [req.params.userid], (err, result) =>{
+    if (result.length > 0) {
+      res.send(result[0]);
+      res.status(200).end();
+    } else {
+      //no times with given userid found
+      res.status(404).end();
+    }
+  });
+});
+
 app.get("/api/times/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('select * from time where userid=? and date=?', [req.params.userid, req.params.date], (err, result) =>{
     if (result.length > 0) {
