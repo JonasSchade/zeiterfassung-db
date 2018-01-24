@@ -4,6 +4,7 @@ const app = express();
 const bp = require('body-parser');
 const jwt = require('jsonwebtoken');
 const jwtMiddleware = require('express-jwt');
+const moment = require('moment');
 
 const superSuperSecret = "superSuperSecret";
 
@@ -609,13 +610,62 @@ app.get("/api/time_by_user_project/:projectid/:userid", jwtMiddleware({secret: s
 //get sum on a day by the userid
 app.get("/api/time_by_user_date/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
   db.all('SELECT time.*, d.sum from time join (select sum(duration) as sum, userid, date from project_time where userid=? and date=?) as d on d.userid=time.userid and d.date=time.date', [req.params.userid, req.params.date], (err, result) =>{
-  // db.all('select time.*, sum(duration) from time, project_time where project_time.userid=? and project_time.date=? and time.useid=? and time.date=?', [req.params.userid, req.params.date,req.params.userid, req.params.date], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
       //no projecttimes with given userid, date and projectid found
-      res.send({sum: 0.0});
+      res.send({sum: 0});
+      res.status(200).end();
+    }
+  });
+});
+
+//duration of time worked on that specific day
+app.get("/api/time_worked_day/:userid/:date", jwtMiddleware({secret: superSuperSecret}), (req,res) => {
+
+  if (req.params.userid == null || req.params.date == null) {
+    console.log("");
+    console.log("Bad POST Request to /api/time_worked_day/");
+    console.log("Request Body:");
+    console.log(req.body);
+    console.log("");
+
+    res.status(400).end();
+    return;
+  }
+
+  db.all('SELECT * from time where userid=? and date=?', [req.params.userid, req.params.date], (err, result) =>{
+    console.log(result);
+    if (result.length > 0) {
+      var come = moment(result[0].comming_time);
+      var leave = moment(result[0].leaving_time);
+      var dur = moment.duration(leave - come);
+
+      //subtract pause
+      dur = dur.subtract(result[0].pause,"hours");
+
+      //add travel time
+      dur = dur.add(result[0].pause * 0.5,"hours");
+
+
+      var format = "";
+
+      if (dur.hours() > 0) {
+        format = format + dur.hours() + "h";
+      };
+
+      if (dur.minutes() > 0) {
+        if (format != "") {
+          format = format + " ";
+        }
+        format = format + dur.minutes() + "min";
+      };
+      res.send({"sum": dur.asMilliseconds(), "sumFormatted": format});
+      res.status(200).end();
+    } else {
+      //no projecttimes with given userid, date and projectid found
+      res.send({sum: 0, sumFormatted: format});
       res.status(200).end();
     }
   });
