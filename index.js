@@ -645,7 +645,7 @@ app.get("/api/time_worked_day/:userid/:date", jwtMiddleware({secret: superSuperS
       dur = dur.subtract(result[0].pause,"hours");
 
       //add travel time
-      dur = dur.add(result[0].pause * 0.5,"hours");
+      dur = dur.add(result[0].travel * 0.5,"hours");
 
 
       var format = "";
