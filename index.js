@@ -511,14 +511,15 @@ app.get("/api/time_of_year/:userid/:year", jwtMiddleware({secret: superSuperSecr
     res.status(404).end();
     return;
   }
-  var query = "select sum(duration) as sum from project_time where userid=? and date like '"+year+"%'";
+  var query = "SELECT sum(duration) as sum from (SELECT time(leaving_time) - time(comming_time) -pause + travel/2 as duration, date FROM time WHERE userid=? and date like '"+year+"%')";
   db.all(query, [req.params.userid], (err, result) =>{
     if (result.length > 0) {
       res.send(result[0]);
       res.status(200).end();
     } else {
       //no times with given userid found
-      res.status(404).end();
+      res.send({sum: 0});
+      res.status(200).end();
     }
   });
 });
