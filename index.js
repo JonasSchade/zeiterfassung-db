@@ -786,7 +786,7 @@ app.put('/api/logdata/:userid', jwtMiddleware({secret: superSuperSecret}), (req,
 
 //NOT USED?
 app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.userid == null || req.param.date == null || req.body.name == null ||  req.body.manager == null) {
+  if (req.body.comming_time == null ||  req.body.leaving_time == null ||  req.body.pause == null ||  req.body.travel == null) {
     console.log("");
     console.log("Bad PUT Request to /api/user_role/");
     console.log("Request Body:");
@@ -795,7 +795,7 @@ app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (r
 
     res.status(400).end();
   } else {
-    db.run("UPDATE time SET comming_time=?, leaving_time=?, pause, travel  WHERE userid=? and date=?", [req.body.comming_time, req.body.leaving_time, req.body.pause, req.body.travel, req.params.userid, req.params.date]);
+    db.run("UPDATE time SET comming_time=?, leaving_time=?, pause=?, travel=?  WHERE userid=? and date=?", [req.body.comming_time, req.body.leaving_time, req.body.pause, req.body.travel, req.params.userid, req.params.date]);
 
     res.status(200).end();
   }
@@ -803,7 +803,7 @@ app.put('/api/time/:userid/:date', jwtMiddleware({secret: superSuperSecret}), (r
 
 //NOT USED?
 app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: superSuperSecret}), (req,res) => {
-  if (req.param.userid == null || req.param.date == null || req.param.projectid == null || req.body.name == null ||  req.body.manager == null) {
+  if (req.params.userid == null || req.params.date == null || req.params.projectid == null || req.body.duration == null) {
     console.log("");
     console.log("Bad PUT Request to /api/project_time/");
     console.log("Request Body:");
@@ -812,9 +812,16 @@ app.put('/api/project_time/:userid/:date/:projectid', jwtMiddleware({secret: sup
 
     res.status(400).end();
   } else {
-    db.run("UPDATE project_time SET duration  WHERE userid=? and date=? and projectid=?", [req.body.duration, req.params.userid, req.params.date, req.params.projectid]);
-
-    res.status(200).end();
+    db.all("SELECT * FROM project_time WHERE userid=? and date=? and projectid=?", [req.params.userid, req.params.date, req.params.projectid], (err, result) =>{
+      if (result.length > 0) {
+        db.run("UPDATE project_time SET duration=? WHERE userid=? and date=? and projectid=?", [req.body.duration, req.params.userid, req.params.date, req.params.projectid]);
+        res.status(200).end();
+      } else {
+        //no projecttimes with given userid, date and projectid found => make new entry
+        db.run("INSERT into project_time(date, userid, projectid, duration) VALUES (?,?,?,?)", [req.params.date, req.params.userid, req.params.projectid, req.body.duration]);
+        res.status(200).end();
+      }
+    });
   }
 });
 
